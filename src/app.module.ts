@@ -1,12 +1,13 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { MysqlConnection } from './infra/database/mysqlConnection';
+import { Module } from "@nestjs/common"
+import { AppController } from "./app.controller"
+import { AppService } from "./app.service"
+import { UserModule } from "./controller/user/user.module"
+
+require("dotenv").config()
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
-  exports: [MysqlConnection]
+    imports: [UserModule],
+    controllers: [AppController],
+    providers: [AppService]
 })
 export class AppModule {}
