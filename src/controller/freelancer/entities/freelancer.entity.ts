@@ -11,6 +11,9 @@ export class freelancer_register {
     @Column({ length: 200 })
     email: string
 
+    @Column({ length: 255 })
+    password: string
+
     @Column({ length: 20 })
     doc: string
 

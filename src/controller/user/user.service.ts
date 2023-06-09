@@ -3,6 +3,7 @@ import { Repository } from "typeorm"
 import { user_register } from "./entities/user.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
 import { ResultDto } from "src/dto/result.dto"
+import * as bcrypt from "bcrypt"
 
 @Injectable()
 export class UserService {
@@ -19,6 +20,7 @@ export class UserService {
         const user = new user_register()
         user.name = data.name
         user.email = data.email
+        user.password = await bcrypt.hash(data.password, 8)
         user.doc = data.doc
         user.phone = data.phone
         return this.userRepository
@@ -35,5 +37,9 @@ export class UserService {
                     mensagem: "Erro ao cadastrar!"
                 }
             })
+    }
+
+    async findOne(email: string): Promise<user_register | undefined> {
+        return this.userRepository.findOne({ where: { email } })
     }
 }

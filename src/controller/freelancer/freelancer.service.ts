@@ -19,6 +19,7 @@ export class FreelancerService {
         const freelancer = new freelancer_register()
         freelancer.name = data.name
         freelancer.email = data.email
+        freelancer.password = data.password
         freelancer.doc = data.doc
         freelancer.phone = data.phone
         freelancer.profession = data.profession

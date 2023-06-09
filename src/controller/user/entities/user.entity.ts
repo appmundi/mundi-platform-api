@@ -8,8 +8,11 @@ export class user_register {
     @Column({ length: 100 })
     name: string
 
-    @Column({ length: 100 })
+    @Column({ length: 200 })
     email: string
+
+    @Column({ length: 255 })
+    password: string
 
     @Column({ length: 20 })
     doc: string
