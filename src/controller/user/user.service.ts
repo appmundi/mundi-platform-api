@@ -20,9 +20,10 @@ export class UserService {
         const user = new user_register()
         user.name = data.name
         user.email = data.email
-        user.password = await bcrypt.hash(data.password, 8)
+        user.password = bcrypt.hashSync(data.password, 8)
         user.doc = data.doc
         user.phone = data.phone
+        user.profession = data.profession
         return this.userRepository
             .save(user)
             .then((result) => {
