@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from "typeorm"
 
 @Entity()
-export class user_register {
+export class User {
     @PrimaryGeneratedColumn()
     id: number
 
@@ -19,7 +19,4 @@ export class user_register {
 
     @Column()
     phone: string
-
-    @Column({ length: 200 })
-    profession?: string
 }

@@ -1,6 +1,6 @@
 import { Injectable, Inject } from "@nestjs/common"
 import { Repository } from "typeorm"
-import { user_register } from "./entities/user.entity"
+import { User } from "./entities/user.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
 import { ResultDto } from "src/dto/result.dto"
 import * as bcrypt from "bcrypt"
@@ -9,21 +9,20 @@ import * as bcrypt from "bcrypt"
 export class UserService {
     constructor(
         @Inject("USER_REPOSITORY")
-        private userRepository: Repository<user_register>
+        private userRepository: Repository<User>
     ) {}
 
-    async findAll(): Promise<user_register[]> {
+    async findAll(): Promise<User[]> {
         return this.userRepository.find()
     }
 
     async register(data: CreateUserDto): Promise<ResultDto> {
-        const user = new user_register()
+        const user = new User()
         user.name = data.name
         user.email = data.email
         user.password = bcrypt.hashSync(data.password, 8)
         user.doc = data.doc
         user.phone = data.phone
-        user.profession = data.profession
         return this.userRepository
             .save(user)
             .then((result) => {
@@ -40,7 +39,7 @@ export class UserService {
             })
     }
 
-    async findOne(email: string): Promise<user_register | undefined> {
+    async findOne(email: string): Promise<User | undefined> {
         return this.userRepository.findOne({ where: { email } })
     }
 }

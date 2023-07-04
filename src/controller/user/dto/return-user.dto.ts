@@ -1,4 +1,4 @@
-import { user_register } from "../entities/user.entity"
+import { User } from "../entities/user.entity"
 
 export class ReturnUserDto {
     id: number
@@ -6,13 +6,12 @@ export class ReturnUserDto {
     email: string
     doc: string
     phone: string
-    profession?: string
-    constructor(userEntity: user_register) {
+
+    constructor(userEntity: User) {
         this.id = userEntity.id
         this.name = userEntity.name
         this.email = userEntity.email
         this.doc = userEntity.doc
         this.phone = userEntity.phone
-        this.profession = userEntity.profession
     }
 }

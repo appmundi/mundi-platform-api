@@ -16,6 +16,4 @@ export class CreateUserDto {
 
     @IsString()
     readonly phone: string
-
-    readonly profession?: string
 }

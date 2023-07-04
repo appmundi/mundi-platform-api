@@ -2,12 +2,12 @@ import { Module } from "@nestjs/common"
 import { AppController } from "./app.controller"
 import { AppService } from "./app.service"
 import { AuthModule } from "./auth/auth.module"
-import { ServicesModule } from "./controller/services/services.module"
+import { EntrepreneurModule } from "./controller/entrepreneur/entrepreneur.module"
 
 require("dotenv").config()
 
 @Module({
-    imports: [AuthModule, ServicesModule],
+    imports: [AuthModule, EntrepreneurModule],
     controllers: [AppController],
     providers: [AppService]
 })
