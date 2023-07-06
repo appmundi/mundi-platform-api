@@ -29,6 +29,27 @@ export class CreateEntrepreneurDto {
     @IsNumber()
     readonly deslocation: number
 
+    @IsString()
+    readonly fieldname: string
+
+    @IsString()
+    readonly originalname: string
+
+    @IsString()
+    readonly encoding: string
+
+    @IsString()
+    readonly mimetype: string
+
+    @IsString()
+    readonly destination: string
+
+    @IsString()
+    readonly filename: string
+
+    @IsString()
+    readonly path: string
+
     @IsBoolean()
     readonly monday: boolean
 
