@@ -4,6 +4,7 @@ import { User } from "./entities/user.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
 import { ResultDto } from "src/dto/result.dto"
 import * as bcrypt from "bcrypt"
+import * as geoip from "geoip-lite"
 
 @Injectable()
 export class UserService {

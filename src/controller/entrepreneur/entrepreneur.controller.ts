@@ -9,7 +9,8 @@ import {
     HttpException,
     HttpStatus,
     UseInterceptors,
-    UploadedFile
+    UploadedFile,
+    Req
 } from "@nestjs/common"
 import { EntrepreneurService } from "./entrepreneur.service"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"

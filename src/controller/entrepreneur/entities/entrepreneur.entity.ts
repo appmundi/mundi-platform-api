@@ -32,26 +32,26 @@ export class Entrepreneur {
     @Column()
     deslocation: number
 
-    @Column()
-    fieldname: string
+    //  @Column()
+    // fieldname: string
 
-    @Column()
-    originalname: string
+    // @Column()
+    // originalname: string
 
-    @Column()
-    encoding: string
+    // @Column()
+    // encoding: string
 
-    @Column()
-    mimetype: string
+    // @Column()
+    // mimetype: string
 
-    @Column()
-    destination: string
+    // @Column()
+    // destination: string
 
-    @Column()
-    filename: string
+    // @Column()
+    // filename: string
 
-    @Column()
-    path: string
+    // @Column()
+    // path: string
 
     @Column()
     monday: boolean
