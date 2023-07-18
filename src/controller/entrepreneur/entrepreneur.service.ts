@@ -1,9 +1,10 @@
-import { Injectable, Inject } from "@nestjs/common"
+import { Injectable, Inject, HttpStatus, HttpException } from "@nestjs/common"
 import { ResultDto } from "src/dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
 import { Repository } from "typeorm"
 import { JwtService } from "@nestjs/jwt"
+import * as bcrypt from "bcrypt"
 
 @Injectable()
 export class EntrepreneurService {
@@ -22,6 +23,7 @@ export class EntrepreneurService {
         const entrepreneur = new Entrepreneur()
         entrepreneur.name = data.name
         entrepreneur.email = data.email
+        entrepreneur.password = bcrypt.hashSync(data.password, 8)
         entrepreneur.doc = data.doc
         entrepreneur.phone = data.phone
         entrepreneur.category = data.category
@@ -29,13 +31,7 @@ export class EntrepreneurService {
         entrepreneur.optionwork = data.optionwork
         entrepreneur.localization = data.localization
         entrepreneur.deslocation = data.deslocation
-        entrepreneur.monday = data.monday
-        entrepreneur.tuesday = data.tuesday
-        entrepreneur.wednesday = data.wednesday
-        entrepreneur.thursday = data.thursday
-        entrepreneur.friday = data.friday
-        entrepreneur.saturday = data.saturday
-        entrepreneur.sunday = data.sunday
+        entrepreneur.operation = data.opration
         entrepreneur.status = data.status
         return this.entrepreneurRepository
             .save(entrepreneur)
@@ -56,5 +52,51 @@ export class EntrepreneurService {
 
     async findOne(profession: string): Promise<Entrepreneur | undefined> {
         return this.entrepreneurRepository.findOne({ where: { profession } })
+    }
+
+    async getUserById(id: number): Promise<Entrepreneur | undefined> {
+        return this.entrepreneurRepository.findOne({ where: { id } })
+    }
+
+    async updateUser(
+        id: number,
+        updateUserDto: Entrepreneur
+    ): Promise<Entrepreneur> {
+        const entrepreneur = await this.getUserById(id)
+        if (!entrepreneur) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Usuario nao encontrado"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+        entrepreneur.name = updateUserDto.name
+        entrepreneur.email = updateUserDto.email
+        entrepreneur.password = updateUserDto.password
+        entrepreneur.doc = updateUserDto.doc
+        entrepreneur.phone = updateUserDto.phone
+        entrepreneur.category = updateUserDto.category
+        entrepreneur.profession = updateUserDto.profession
+        entrepreneur.optionwork = updateUserDto.optionwork
+        entrepreneur.localization = updateUserDto.localization
+        entrepreneur.deslocation = updateUserDto.deslocation
+        entrepreneur.operation = updateUserDto.operation
+        return this.entrepreneurRepository.save(entrepreneur)
+    }
+
+    async deleteUser(id: number): Promise<void> {
+        const entrepreneur = await this.getUserById(id)
+        if (!entrepreneur) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Usuario nao encontrado"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+        await this.entrepreneurRepository.remove(entrepreneur)
     }
 }

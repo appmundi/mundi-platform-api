@@ -1,10 +1,9 @@
-import { Injectable, Inject } from "@nestjs/common"
+import { Injectable, Inject, HttpException, HttpStatus } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "./entities/user.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
 import { ResultDto } from "src/dto/result.dto"
 import * as bcrypt from "bcrypt"
-import * as geoip from "geoip-lite"
 
 @Injectable()
 export class UserService {
@@ -42,5 +41,42 @@ export class UserService {
 
     async findOne(email: string): Promise<User | undefined> {
         return this.userRepository.findOne({ where: { email } })
+    }
+
+    async getUserById(id: number): Promise<User | undefined> {
+        return this.userRepository.findOne({ where: { id } })
+    }
+
+    async updateUser(id: number, updateUserDto: User): Promise<User> {
+        const user = await this.getUserById(id)
+        if (!user) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Usuario nao encontrado"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+        user.name = updateUserDto.name
+        user.email = updateUserDto.email
+        user.password = updateUserDto.password
+        user.doc = updateUserDto.doc
+        user.phone = updateUserDto.phone
+        return this.userRepository.save(user)
+    }
+
+    async deleteUser(id: number): Promise<void> {
+        const user = await this.getUserById(id)
+        if (!user) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Usuario nao encontrado"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+        await this.userRepository.remove(user)
     }
 }

@@ -9,7 +9,9 @@ import {
     UsePipes,
     HttpException,
     HttpStatus,
-    Req
+    Put,
+    Param,
+    Delete
 } from "@nestjs/common"
 import { AuthGuard } from "@nestjs/passport"
 import { UserService } from "./user.service"
@@ -20,6 +22,7 @@ import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
 import { ReturnUserDto } from "./dto/return-user.dto"
 import { ValidateDoc } from "../helpers/validate.cpf"
 import { ValidatePhone } from "../helpers/validate.phone"
+import { User } from "./entities/user.entity"
 
 @Controller("user")
 export class UserController {
@@ -64,5 +67,20 @@ export class UserController {
     @Post("login")
     async login(@Request() req) {
         return this.authService.login(req.user)
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put(":id")
+    async updateUser(
+        @Param("id") id: number,
+        @Body() updateUserDto: User
+    ): Promise<User> {
+        return this.userService.updateUser(id, updateUserDto)
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete(":id")
+    async deleteUser(@Param("id") id: number): Promise<void> {
+        return this.userService.deleteUser(id)
     }
 }

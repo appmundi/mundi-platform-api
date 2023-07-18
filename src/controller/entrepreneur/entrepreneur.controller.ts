@@ -10,7 +10,9 @@ import {
     HttpStatus,
     UseInterceptors,
     UploadedFile,
-    Req
+    Put,
+    Delete,
+    Param
 } from "@nestjs/common"
 import { EntrepreneurService } from "./entrepreneur.service"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
@@ -74,5 +76,20 @@ export class EntrepreneurController {
     handleUpload(@UploadedFile() file: Express.Multer.File) {
         console.log("file", file)
         return "File upload API"
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put(":id")
+    async updateUser(
+        @Param("id") id: number,
+        @Body() updateUserDto: Entrepreneur
+    ): Promise<Entrepreneur> {
+        return this.entrepreneurService.updateUser(id, updateUserDto)
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete(":id")
+    async deleteUser(@Param("id") id: number): Promise<void> {
+        return this.entrepreneurService.deleteUser(id)
     }
 }

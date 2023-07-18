@@ -11,6 +11,9 @@ export class Entrepreneur {
     @Column({ length: 200, unique: true })
     email: string
 
+    @Column({ length: 200 })
+    password: string
+
     @Column({ length: 20, unique: true })
     doc: string
 
@@ -32,47 +35,8 @@ export class Entrepreneur {
     @Column()
     deslocation: number
 
-    //  @Column()
-    // fieldname: string
-
-    // @Column()
-    // originalname: string
-
-    // @Column()
-    // encoding: string
-
-    // @Column()
-    // mimetype: string
-
-    // @Column()
-    // destination: string
-
-    // @Column()
-    // filename: string
-
-    // @Column()
-    // path: string
-
-    @Column()
-    monday: boolean
-
-    @Column()
-    tuesday: boolean
-
-    @Column()
-    wednesday: boolean
-
-    @Column()
-    thursday: boolean
-
-    @Column()
-    friday: boolean
-
-    @Column()
-    saturday: boolean
-
-    @Column()
-    sunday: boolean
+    @Column({ length: 25 })
+    operation: string
 
     @Column()
     status?: boolean

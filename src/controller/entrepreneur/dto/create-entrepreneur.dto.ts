@@ -9,6 +9,9 @@ export class CreateEntrepreneurDto {
     readonly email: string
 
     @IsString()
+    readonly password: string
+
+    @IsString()
     readonly phone: string
 
     @IsString()
@@ -29,47 +32,8 @@ export class CreateEntrepreneurDto {
     @IsNumber()
     readonly deslocation: number
 
-    //  @IsString()
-    // readonly fieldname: string
-
-    //  @IsString()
-    // readonly originalname: string
-
-    // @IsString()
-    //  readonly encoding: string
-
-    // @IsString()
-    // readonly mimetype: string
-
-    // @IsString()
-    // readonly destination: string
-
-    // @IsString()
-    // readonly filename: string
-
-    // @IsString()
-    // readonly path: string
-
-    @IsBoolean()
-    readonly monday: boolean
-
-    @IsBoolean()
-    readonly tuesday: boolean
-
-    @IsBoolean()
-    readonly wednesday: boolean
-
-    @IsBoolean()
-    readonly thursday: boolean
-
-    @IsBoolean()
-    readonly friday: boolean
-
-    @IsBoolean()
-    readonly saturday: boolean
-
-    @IsBoolean()
-    readonly sunday: boolean
+    @IsString()
+    readonly opration: string
 
     @IsBoolean()
     readonly status?: boolean
