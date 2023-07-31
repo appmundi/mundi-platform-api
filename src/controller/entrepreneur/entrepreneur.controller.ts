@@ -58,6 +58,7 @@ export class EntrepreneurController {
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurService.findAll()
     }
+
     @Post("upload")
     @UseInterceptors(
         FileInterceptor("file", {
