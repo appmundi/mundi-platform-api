@@ -54,8 +54,12 @@ export class EntrepreneurService {
         return this.entrepreneurRepository.findOne({ where: { profession } })
     }
 
-    async getUserById(id: number): Promise<Entrepreneur | undefined> {
-        return this.entrepreneurRepository.findOne({ where: { id } })
+    async getUserById(
+        entrepreneurId: number
+    ): Promise<Entrepreneur | undefined> {
+        return this.entrepreneurRepository.findOne({
+            where: { entrepreneurId }
+        })
     }
 
     async updateUser(
@@ -86,8 +90,8 @@ export class EntrepreneurService {
         return this.entrepreneurRepository.save(entrepreneur)
     }
 
-    async deleteUser(id: number): Promise<void> {
-        const entrepreneur = await this.getUserById(id)
+    async deleteUser(entrepreneurId: number): Promise<void> {
+        const entrepreneur = await this.getUserById(entrepreneurId)
         if (!entrepreneur) {
             throw new HttpException(
                 {

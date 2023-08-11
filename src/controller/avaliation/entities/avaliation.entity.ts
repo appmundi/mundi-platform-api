@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm"
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm"
+import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
 
 @Entity()
 export class Avaliation {
@@ -12,8 +13,9 @@ export class Avaliation {
     identrepreneur: number
 
     @Column({ length: 255 })
+    @ManyToOne(() => Entrepreneur)
     description: string
 
-    @Column()
+    @ManyToOne(() => Entrepreneur)
     value: number
 }

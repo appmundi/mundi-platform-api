@@ -1,9 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm"
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
+import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
 
 @Entity()
 export class Entrepreneur {
     @PrimaryGeneratedColumn()
-    id: number
+    entrepreneurId: number
 
     @Column({ length: 200 })
     name: string
@@ -40,4 +41,7 @@ export class Entrepreneur {
 
     @Column()
     status?: boolean
+
+    @OneToMany(() => Avaliation, (avaliation) => avaliation.identrepreneur)
+    avaliation: Avaliation[]
 }

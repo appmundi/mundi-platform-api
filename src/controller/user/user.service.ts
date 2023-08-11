@@ -43,8 +43,8 @@ export class UserService {
         return this.userRepository.findOne({ where: { email } })
     }
 
-    async getUserById(id: number): Promise<User | undefined> {
-        return this.userRepository.findOne({ where: { id } })
+    async getUserById(userId: number): Promise<User | undefined> {
+        return this.userRepository.findOne({ where: { userId } })
     }
 
     async updateUser(id: number, updateUserDto: User): Promise<User> {
@@ -66,8 +66,8 @@ export class UserService {
         return this.userRepository.save(user)
     }
 
-    async deleteUser(id: number): Promise<void> {
-        const user = await this.getUserById(id)
+    async deleteUser(userId: number): Promise<void> {
+        const user = await this.getUserById(userId)
         if (!user) {
             throw new HttpException(
                 {

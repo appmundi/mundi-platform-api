@@ -8,7 +8,7 @@ export class ReturnUserDto {
     phone: string
 
     constructor(userEntity: User) {
-        this.id = userEntity.id
+        this.id = userEntity.userId
         this.name = userEntity.name
         this.email = userEntity.email
         this.doc = userEntity.doc
