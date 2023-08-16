@@ -7,15 +7,11 @@ export class Avaliation {
     id: number
 
     @Column()
-    iduser: number
+    rating: number
 
     @Column()
-    identrepreneur: number
+    comment: string
 
-    @Column({ length: 255 })
-    @ManyToOne(() => Entrepreneur)
-    description: string
-
-    @ManyToOne(() => Entrepreneur)
-    value: number
+    @ManyToOne(() => Entrepreneur, (entrepreneur) => entrepreneur.avaliation)
+    entrepreneur: Entrepreneur
 }

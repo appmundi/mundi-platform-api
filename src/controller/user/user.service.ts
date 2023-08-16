@@ -47,8 +47,8 @@ export class UserService {
         return this.userRepository.findOne({ where: { userId } })
     }
 
-    async updateUser(id: number, updateUserDto: User): Promise<User> {
-        const user = await this.getUserById(id)
+    async updateUser(userId: number, updateUserDto: User): Promise<User> {
+        const user = await this.getUserById(userId)
         if (!user) {
             throw new HttpException(
                 {

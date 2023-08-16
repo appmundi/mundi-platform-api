@@ -3,18 +3,25 @@ import { SchedulingService } from "./scheduling.service"
 import { SchedulingController } from "./scheduling.controller"
 import { DatabaseModule } from "src/database/database.module"
 import { AuthModule } from "src/auth/auth.module"
+import { ScheduleProviders } from "./scheduling.providers"
+import { TypeOrmModule } from "@nestjs/typeorm"
 import { UserProviders } from "../user/user.providers"
-import { UserModule } from "../user/user.module"
-import { EntrepreneurModule } from "../entrepreneur/entrepreneur.module"
+import { EntrepreneurProviders } from "../entrepreneur/entrepreneur.providers"
 
 @Module({
     imports: [
         DatabaseModule,
         forwardRef(() => AuthModule),
-        UserModule,
-        EntrepreneurModule
+        TypeOrmModule.forFeature([], "SCHEDULE_REPOSITORY"),
+        TypeOrmModule.forFeature([], "ENTREPRENEUR_REPOSITORY"),
+        TypeOrmModule.forFeature([], "USER_REPOSITORY")
     ],
     controllers: [SchedulingController],
-    providers: [SchedulingService, ...UserProviders]
+    providers: [
+        SchedulingService,
+        ...ScheduleProviders,
+        ...UserProviders,
+        ...EntrepreneurProviders
+    ]
 })
 export class SchedulingModule {}

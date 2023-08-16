@@ -2,29 +2,36 @@ import {
     Controller,
     Post,
     Body,
-    Get,
     UseGuards,
-    Delete,
-    Param
+    Param,
+    NotFoundException
 } from "@nestjs/common"
 import { AvaliationService } from "./avaliation.service"
-import { CreateAvaliationDto } from "./dto/create-avaliation.dto"
-import { ResultDto } from "src/dto/result.dto"
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
-import { Avaliation } from "./entities/avaliation.entity"
 
 @Controller("avaliation")
 export class AvaliationController {
     constructor(private readonly avaliationService: AvaliationService) {}
 
     @UseGuards(JwtAuthGuard)
-    @Post("create")
-    async create(@Body() data: CreateAvaliationDto): Promise<ResultDto> {
-        return this.avaliationService.create(data)
-    }
+    @Post(":id/evaluate")
+    async evaluateFreelancer(
+        @Param("id") entrepreneurId: number,
+        @Body() evaluationData: { rating: number; comment: string }
+    ) {
+        try {
+            const avaliation = await this.avaliationService.createAvaliation(
+                entrepreneurId,
+                evaluationData.rating,
+                evaluationData.comment
+            )
 
-    @Get(":id")
-    async findAll(@Param("id") id: number): Promise<Avaliation[]> {
-        return this.avaliationService.findAll(id)
+            return { message: "Avaliação enviada com sucesso", avaliation }
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw new NotFoundException(error.message)
+            }
+            throw new Error("Falha ao enviar avaliação")
+        }
     }
 }

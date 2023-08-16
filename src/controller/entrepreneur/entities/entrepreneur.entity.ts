@@ -42,6 +42,6 @@ export class Entrepreneur {
     @Column()
     status?: boolean
 
-    @OneToMany(() => Avaliation, (avaliation) => avaliation.identrepreneur)
+    @OneToMany(() => Avaliation, (evaluation) => evaluation.entrepreneur)
     avaliation: Avaliation[]
 }

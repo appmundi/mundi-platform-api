@@ -63,10 +63,10 @@ export class EntrepreneurService {
     }
 
     async updateUser(
-        id: number,
+        entrepreneurId: number,
         updateUserDto: Entrepreneur
     ): Promise<Entrepreneur> {
-        const entrepreneur = await this.getUserById(id)
+        const entrepreneur = await this.getUserById(entrepreneurId)
         if (!entrepreneur) {
             throw new HttpException(
                 {

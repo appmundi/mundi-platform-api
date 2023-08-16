@@ -1,14 +1,14 @@
 import { User } from "../entities/user.entity"
 
 export class ReturnUserDto {
-    id: number
+    userId: number
     name: string
     email: string
     doc: string
     phone: string
 
     constructor(userEntity: User) {
-        this.id = userEntity.userId
+        this.userId = userEntity.userId
         this.name = userEntity.name
         this.email = userEntity.email
         this.doc = userEntity.doc

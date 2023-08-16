@@ -1,19 +1,18 @@
-import { Injectable, Inject } from "@nestjs/common"
+/*import { Injectable, Inject } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { Schedule } from "./entities/scheduling.entity"
-import { InjectRepository } from "@nestjs/typeorm"
 
 @Injectable()
 export class SchedulingService {
     constructor(
         @Inject("USER_REPOSITORY")
         private userRepository: Repository<User>,
-        @Inject("ENTREPRENEUR_REPOSITORY")
-        private entrepreneurRepository: Repository<Entrepreneur>,
         @Inject("SCHEDULE_REPOSITORY")
-        private scheduleRepository: Repository<Schedule>
+        private scheduleRepository: Repository<Schedule>,
+        @Inject("ENTREPRENEUR_REPOSITORY")
+        private entrepreneurRepository: Repository<Entrepreneur>
     ) {}
 
     async scheduleService(
@@ -39,3 +38,53 @@ export class SchedulingService {
         return "Agendamento criado com sucesso."
     }
 }
+////////////////////////////////////////////////
+
+
+@Entity()
+export class Schedule {
+    @PrimaryGeneratedColumn()
+    id: number
+
+    @ManyToOne(() => User)
+    @JoinColumn()
+    user: User
+
+    @ManyToOne(() => Entrepreneur)
+    @JoinColumn()
+    entrepreneur: Entrepreneur
+
+    @Column({ type: "timestamp" })
+    scheduledDate: Date
+}
+
+//////////////////////////////////////////////////////
+
+@Post("schedule")
+    async scheduleService(
+        @Body()
+        body: {
+            userId: number
+            entrepreneurId: number
+            scheduledDate: Date
+        }
+    ) {
+        try {
+            const result = await this.schedulingService.scheduleService(
+                body.userId,
+                body.entrepreneurId,
+                body.scheduledDate
+            )
+            return { message: result }
+        } catch (error) {
+            return { error: error.message }
+        }
+    }
+
+
+
+
+
+
+
+*/

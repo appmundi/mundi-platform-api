@@ -9,6 +9,7 @@ import { AuthModule } from "src/auth/auth.module"
 @Module({
     imports: [DatabaseModule, forwardRef(() => AuthModule)],
     controllers: [EntrepreneurController],
-    providers: [...EntrepreneurProviders, EntrepreneurService]
+    providers: [...EntrepreneurProviders, EntrepreneurService],
+    exports: [EntrepreneurService]
 })
 export class EntrepreneurModule {}
