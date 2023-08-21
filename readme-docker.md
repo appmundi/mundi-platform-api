@@ -6,48 +6,22 @@
 4. Execute o comando para construir uma nova imagem com uma nova tag (versão):
 
    ```bash
-   docker build -t mundiapp-api:2.1.1 .
+   docker build -t mundiapp-api:1.0 .
    ```
 
-Substitua 2.0 pela nova versão.
-
-## Enviar Nova Versão para o Amazon ECR
-
-1. Configure o AWS CLI e suas credenciais.
-2. Faça login no Amazon ECR:
-
-    ```bash 
-    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 130605633311.dkr.ecr.us-east-1.amazonaws.com/mundiapp
-    ```
-    
-3. Marque a imagem com o nome do repositório ECR:
-
-    ```bash 
-    docker 130605633311.dkr.ecr.us-east-1.amazonaws.com/mundiapp/mundiapp-api:2.0
-    ```
-
-4. Faça push da imagem para o ECR:
-
-    ```bash 
-    docker push 130605633311.dkr.ecr.us-east-1.amazonaws.com/mundiapp/mundiapp-api:2.0
-    ```
+Substitua 1.0 pela nova versão.
 
 ## Atualizar Versão em Execução
 
-1. No servidor Linux, pare o contêiner atual:
+1. Remova o contêiner antigo:
 
     ```bash 
-    docker stop mundiapp-api
+    docker rm -f mundiapp-api
     ```
-2. Remova o contêiner antigo:
+2. Inicie o novo contêiner com a versão atualizada:
 
     ```bash 
-    docker rm mundiapp-api
-    ```
-3. Inicie o novo contêiner com a versão atualizada:
-
-    ```bash 
-    docker run -d -p -e DB_PORT= 3000:3000 mundiapp-api:2.1.1
+    docker run --name mundiapp-api -d -p 80:3000 -e ACCESS_TOKEN_SECRET="fHeTcSZf6234jfvwm0k6391605eb4cfd" -e DB_HOST=mundiapp.ct3amoxtka8w.us-east-1.rds.amazonaws.com -e DB_USER=admin -e DB_PASSWORD='xobanIj6mLTH*n=#?!br' -e DB_DATABASE=mundidb -e DB_PORT=3306 mundiapp-api:1.0
     ```
 
 
