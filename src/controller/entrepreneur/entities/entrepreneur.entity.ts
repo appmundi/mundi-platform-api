@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
 import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
+import { Work } from "src/controller/work/entities/work.entity"
 
 @Entity()
 export class Entrepreneur {
@@ -44,4 +45,7 @@ export class Entrepreneur {
 
     @OneToMany(() => Avaliation, (evaluation) => evaluation.entrepreneur)
     avaliation: Avaliation[]
+
+    @OneToMany(() => Work, (work) => work.entrepreneur)
+    work: Work[]
 }

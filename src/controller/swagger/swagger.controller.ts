@@ -6,8 +6,9 @@ import { ApiTags } from "@nestjs/swagger"
 @ApiTags("user")
 @ApiTags("avaliation")
 @ApiTags("geolocation")
+@ApiTags("work")
 @Controller("swagger")
-export class ExemploController {
+export class SwaggerController {
     @Get()
     findAll(): string {
         return "Este é um exemplo de endpoint"

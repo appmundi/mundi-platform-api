@@ -18,6 +18,7 @@ async function bootstrap() {
         .addTag("user")
         .addTag("avaliation")
         .addTag("geolocation")
+        .addTag("work")
         .build()
 
     const document = SwaggerModule.createDocument(app, config)

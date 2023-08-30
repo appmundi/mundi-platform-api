@@ -3,7 +3,6 @@ import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { Schedule } from "./entities/scheduling.entity"
-import { InjectRepository } from "@nestjs/typeorm"
 
 @Injectable()
 export class SchedulingService {
