@@ -32,7 +32,19 @@ export class Entrepreneur {
     optionwork: boolean
 
     @Column()
-    localization: string
+    address: string
+
+    @Column()
+    addressNumber: number
+
+    @Column()
+    cep: number
+
+    @Column()
+    city: string
+
+    @Column()
+    state: string
 
     @Column()
     deslocation: number

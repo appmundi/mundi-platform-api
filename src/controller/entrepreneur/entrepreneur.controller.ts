@@ -53,7 +53,6 @@ export class EntrepreneurController {
         return this.entrepreneurService.register(data)
     }
 
-    @UseGuards(JwtAuthGuard)
     @Get("searchAll")
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurService.findAll()
