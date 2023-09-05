@@ -15,11 +15,73 @@ export class EntrepreneurService {
     ) {}
 
     async findAll(): Promise<Entrepreneur[]> {
-        return this.entrepreneurRepository.find()
+        return this.entrepreneurRepository.find({
+            relations: ["avaliation", "work"]
+        })
     }
 
     async register(data: CreateEntrepreneurDto): Promise<ResultDto> {
         const payload = { sub: data.email, username: data.doc }
+
+        const existingEmailUser = await this.entrepreneurRepository.findOne({
+            where: { email: data.email }
+        })
+
+        if (existingEmailUser) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Email já está em uso!"
+            }
+        }
+
+        const existingDocUser = await this.entrepreneurRepository.findOne({
+            where: { doc: data.doc }
+        })
+
+        if (existingDocUser) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Cpf já está em uso!"
+            }
+        }
+        if (data.address == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo endereco e obrigatorio!"
+            }
+        }
+
+        if (data.profession == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo profissao e obrigatorio!"
+            }
+        }
+        if (data.addressNumber == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo numero de endereco e obrigatorio!"
+            }
+        }
+        if (data.cep == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo cep e obrigatorio!"
+            }
+        }
+        if (data.city == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo cidade e obrigatorio!"
+            }
+        }
+        if (data.state == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo estado e obrigatorio!"
+            }
+        }
+
         const entrepreneur = new Entrepreneur()
         entrepreneur.name = data.name
         entrepreneur.email = data.email
@@ -29,7 +91,11 @@ export class EntrepreneurService {
         entrepreneur.category = data.category
         entrepreneur.profession = data.profession
         entrepreneur.optionwork = data.optionwork
-        entrepreneur.localization = data.localization
+        entrepreneur.address = data.address
+        entrepreneur.addressNumber = data.addressNumber
+        entrepreneur.cep = data.cep
+        entrepreneur.city = data.city
+        entrepreneur.state = data.state
         entrepreneur.deslocation = data.deslocation
         entrepreneur.operation = data.opration
         entrepreneur.status = data.status
@@ -84,7 +150,11 @@ export class EntrepreneurService {
         entrepreneur.category = updateUserDto.category
         entrepreneur.profession = updateUserDto.profession
         entrepreneur.optionwork = updateUserDto.optionwork
-        entrepreneur.localization = updateUserDto.localization
+        entrepreneur.address = updateUserDto.address
+        entrepreneur.addressNumber = updateUserDto.addressNumber
+        entrepreneur.cep = updateUserDto.cep
+        entrepreneur.city = updateUserDto.city
+        entrepreneur.state = updateUserDto.state
         entrepreneur.deslocation = updateUserDto.deslocation
         entrepreneur.operation = updateUserDto.operation
         return this.entrepreneurRepository.save(entrepreneur)

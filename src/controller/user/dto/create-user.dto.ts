@@ -5,7 +5,7 @@ export class CreateUserDto {
     readonly name: string
 
     @IsEmail()
-    @IsString({ message: "O email é Obrigatorio" })
+    @IsString({ message: "O email é Obrigatorio ou está duplicado" })
     readonly email: string
 
     @IsString({ message: "O senha é Obrigatorio" })

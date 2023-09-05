@@ -27,7 +27,19 @@ export class CreateEntrepreneurDto {
     readonly optionwork: boolean
 
     @IsString()
-    readonly localization: string
+    readonly address: string
+
+    @IsNumber()
+    readonly addressNumber: number
+
+    @IsNumber()
+    readonly cep: number
+
+    @IsString()
+    readonly city: string
+
+    @IsString()
+    readonly state: string
 
     @IsNumber()
     readonly deslocation: number

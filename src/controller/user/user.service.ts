@@ -17,6 +17,34 @@ export class UserService {
     }
 
     async register(data: CreateUserDto): Promise<ResultDto> {
+        const existingEmailUser = await this.userRepository.findOne({
+            where: { email: data.email }
+        })
+
+        if (existingEmailUser) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Email já está em uso!"
+            }
+        }
+
+        const existingDocUser = await this.userRepository.findOne({
+            where: { doc: data.doc }
+        })
+
+        if (existingDocUser) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Cpf já está em uso!"
+            }
+        }
+        if (data.password.length < 5) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo senha tem que ter no minimo 5 caracter!"
+            }
+        }
+
         const user = new User()
         user.name = data.name
         user.email = data.email
@@ -78,5 +106,13 @@ export class UserService {
             )
         }
         await this.userRepository.remove(user)
+    }
+
+    async findOneByEmail(email: string): Promise<User | null> {
+        return this.userRepository.findOne({ where: { email } })
+    }
+
+    async findOneByCpf(doc: string): Promise<User | null> {
+        return this.userRepository.findOne({ where: { doc } })
     }
 }
