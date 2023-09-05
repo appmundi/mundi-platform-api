@@ -29,11 +29,11 @@ export class CreateEntrepreneurDto {
     @IsString()
     readonly address: string
 
-    @IsNumber()
-    readonly addressNumber: number
+    @IsString()
+    readonly addressNumber: string
 
-    @IsNumber()
-    readonly cep: number
+    @IsString()
+    readonly cep: string
 
     @IsString()
     readonly city: string
@@ -41,8 +41,8 @@ export class CreateEntrepreneurDto {
     @IsString()
     readonly state: string
 
-    @IsNumber()
-    readonly deslocation: number
+    @IsString()
+    readonly deslocation: string
 
     @IsString()
     readonly opration: string

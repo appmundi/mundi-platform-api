@@ -35,10 +35,10 @@ export class Entrepreneur {
     address: string
 
     @Column()
-    addressNumber: number
+    addressNumber: string
 
     @Column()
-    cep: number
+    cep: string
 
     @Column()
     city: string
@@ -47,7 +47,7 @@ export class Entrepreneur {
     state: string
 
     @Column()
-    deslocation: number
+    deslocation: string
 
     @Column({ length: 25 })
     operation: string
