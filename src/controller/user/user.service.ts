@@ -45,6 +45,13 @@ export class UserService {
             }
         }
 
+        if (data.name == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo nome é obrigatorio!"
+            }
+        }
+
         const user = new User()
         user.name = data.name
         user.email = data.email

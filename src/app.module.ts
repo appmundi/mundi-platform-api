@@ -8,6 +8,7 @@ import { AvaliationModule } from "./controller/avaliation/avaliation.module"
 import { SchedulingModule } from "./controller/scheduling/scheduling.module"
 import { UserModule } from "./controller/user/user.module"
 import { WorkModule } from "./controller/work/work.module"
+import { UploudModule } from "./controller/uploud/uploud.module"
 
 require("dotenv").config()
 
@@ -19,7 +20,8 @@ require("dotenv").config()
         GeolocationModule,
         AvaliationModule,
         WorkModule,
-        SchedulingModule
+        SchedulingModule,
+        UploudModule
     ],
     controllers: [AppController],
     providers: [AppService]

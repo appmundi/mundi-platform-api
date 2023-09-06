@@ -4,6 +4,9 @@ export class CreateEntrepreneurDto {
     @IsString({ message: "O nome é Obrigatorio" })
     readonly name: string
 
+    @IsString()
+    readonly companyName: string
+
     @IsString({ message: "O email é Obrigatorio" })
     @IsEmail()
     readonly email: string
@@ -19,9 +22,6 @@ export class CreateEntrepreneurDto {
 
     @IsString()
     readonly category: string
-
-    @IsString()
-    readonly profession: string
 
     @IsBoolean()
     readonly optionwork: boolean
@@ -43,6 +43,9 @@ export class CreateEntrepreneurDto {
 
     @IsString()
     readonly deslocation: string
+
+    @IsString()
+    readonly valueDeslocation: string
 
     @IsString()
     readonly opration: string

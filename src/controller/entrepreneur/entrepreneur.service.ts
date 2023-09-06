@@ -51,12 +51,19 @@ export class EntrepreneurService {
             }
         }
 
-        if (data.profession == null) {
+        if (data.companyName == null) {
             return <ResultDto>{
                 status: false,
-                mensagem: "Campo profissao e obrigatorio!"
+                mensagem: "Campo nome da empresa e obrigatorio!"
             }
         }
+        if (data.name == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo nome e obrigatorio!"
+            }
+        }
+
         if (data.addressNumber == null) {
             return <ResultDto>{
                 status: false,
@@ -89,7 +96,7 @@ export class EntrepreneurService {
         entrepreneur.doc = data.doc
         entrepreneur.phone = data.phone
         entrepreneur.category = data.category
-        entrepreneur.profession = data.profession
+        entrepreneur.companyName = data.companyName
         entrepreneur.optionwork = data.optionwork
         entrepreneur.address = data.address
         entrepreneur.addressNumber = data.addressNumber
@@ -97,6 +104,7 @@ export class EntrepreneurService {
         entrepreneur.city = data.city
         entrepreneur.state = data.state
         entrepreneur.deslocation = data.deslocation
+        entrepreneur.valueDeslocation = data.valueDeslocation
         entrepreneur.operation = data.opration
         entrepreneur.status = data.status
         return this.entrepreneurRepository
@@ -116,8 +124,8 @@ export class EntrepreneurService {
             })
     }
 
-    async findOne(profession: string): Promise<Entrepreneur | undefined> {
-        return this.entrepreneurRepository.findOne({ where: { profession } })
+    async findOne(category: string): Promise<Entrepreneur | undefined> {
+        return this.entrepreneurRepository.findOne({ where: { category } })
     }
 
     async getUserById(
@@ -148,7 +156,7 @@ export class EntrepreneurService {
         entrepreneur.doc = updateUserDto.doc
         entrepreneur.phone = updateUserDto.phone
         entrepreneur.category = updateUserDto.category
-        entrepreneur.profession = updateUserDto.profession
+        entrepreneur.companyName = updateUserDto.companyName
         entrepreneur.optionwork = updateUserDto.optionwork
         entrepreneur.address = updateUserDto.address
         entrepreneur.addressNumber = updateUserDto.addressNumber
@@ -156,6 +164,7 @@ export class EntrepreneurService {
         entrepreneur.city = updateUserDto.city
         entrepreneur.state = updateUserDto.state
         entrepreneur.deslocation = updateUserDto.deslocation
+        entrepreneur.valueDeslocation = updateUserDto.valueDeslocation
         entrepreneur.operation = updateUserDto.operation
         return this.entrepreneurRepository.save(entrepreneur)
     }

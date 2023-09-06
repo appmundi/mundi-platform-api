@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
 import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
 import { Work } from "src/controller/work/entities/work.entity"
+import { Image } from "src/controller/uploud/entities/uploud.entity"
 
 @Entity()
 export class Entrepreneur {
@@ -26,7 +27,7 @@ export class Entrepreneur {
     category: string
 
     @Column({ length: 200 })
-    profession: string
+    companyName: string
 
     @Column()
     optionwork: boolean
@@ -49,6 +50,9 @@ export class Entrepreneur {
     @Column()
     deslocation: string
 
+    @Column()
+    valueDeslocation: string
+
     @Column({ length: 25 })
     operation: string
 
@@ -60,4 +64,7 @@ export class Entrepreneur {
 
     @OneToMany(() => Work, (work) => work.entrepreneur)
     work: Work[]
+
+    @OneToMany(() => Image, (image) => image.entrepreneur)
+    images: Image[]
 }
