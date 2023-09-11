@@ -53,8 +53,8 @@ export class Entrepreneur {
     @Column()
     valueDeslocation: string
 
-    @Column({ length: 25 })
-    operation: string
+    @Column({ type: 'json'})
+    operation: JSON
 
     @Column()
     status?: boolean

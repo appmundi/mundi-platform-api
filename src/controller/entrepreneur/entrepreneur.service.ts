@@ -12,7 +12,7 @@ export class EntrepreneurService {
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
         private jwtService: JwtService
-    ) {}
+    ) { }
 
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurRepository.find({
@@ -88,8 +88,9 @@ export class EntrepreneurService {
                 mensagem: "Campo estado e obrigatorio!"
             }
         }
-
         const entrepreneur = new Entrepreneur()
+
+
         entrepreneur.name = data.name
         entrepreneur.email = data.email
         entrepreneur.password = bcrypt.hashSync(data.password, 8)
@@ -107,6 +108,8 @@ export class EntrepreneurService {
         entrepreneur.valueDeslocation = data.valueDeslocation
         entrepreneur.operation = data.operation
         entrepreneur.status = data.status
+
+
         return this.entrepreneurRepository
             .save(entrepreneur)
             .then(async (result) => {
@@ -117,6 +120,7 @@ export class EntrepreneurService {
                 }
             })
             .catch((error) => {
+                
                 return <ResultDto>{
                     status: false,
                     mensagem: "Erro ao cadastrar!"
