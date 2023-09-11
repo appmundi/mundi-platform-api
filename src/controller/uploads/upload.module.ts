@@ -1,7 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common"
-import { ImagesService } from "./uploud.service"
-import { ImagesController } from "./uploud.controller"
-import { ImageProviders } from "./uploud.providers"
+import { ImagesService } from "./upload.service"
+import { ImagesController } from "./upload.controller"
+import { ImageProviders } from "./upload.providers"
 
 import { DatabaseModule } from "src/database/database.module"
 import { AuthModule } from "src/auth/auth.module"
@@ -24,4 +24,4 @@ import { EntrepreneurProviders } from "../entrepreneur/entrepreneur.providers"
         ...EntrepreneurProviders
     ]
 })
-export class UploudModule {}
+export class UploadModule {}

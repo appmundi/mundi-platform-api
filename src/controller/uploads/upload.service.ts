@@ -1,9 +1,9 @@
 import { Injectable, Inject } from "@nestjs/common"
 import * as fs from "fs"
 import { Repository } from "typeorm"
-import { Image } from "./entities/uploud.entity"
+import { Image } from "./entities/upload.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
-import path from "path"
+import * as path from "path"
 
 @Injectable()
 export class ImagesService {
@@ -19,7 +19,9 @@ export class ImagesService {
         entrepreneurId: number
     ): Promise<{ path: string }> {
         const fileName = `${Date.now()}-${image.originalname}`
-        const filePath = path.join("./uploads", fileName)
+        const uploadFolder = path.resolve(__dirname, "./images")
+
+        const filePath = path.join(uploadFolder, fileName)
 
         fs.writeFileSync(filePath, image.buffer)
 

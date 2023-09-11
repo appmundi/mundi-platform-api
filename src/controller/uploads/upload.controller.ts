@@ -6,7 +6,7 @@ import {
     UseInterceptors
 } from "@nestjs/common"
 import { FileFieldsInterceptor } from "@nestjs/platform-express"
-import { ImagesService } from "./uploud.service"
+import { ImagesService } from "./upload.service"
 
 @Controller("images")
 export class ImagesController {

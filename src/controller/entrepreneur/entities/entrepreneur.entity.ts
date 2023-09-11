@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
 import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
 import { Work } from "src/controller/work/entities/work.entity"
-import { Image } from "src/controller/uploud/entities/uploud.entity"
+import { Image } from "src/controller/uploads/entities/upload.entity"
 
 @Entity()
 export class Entrepreneur {
