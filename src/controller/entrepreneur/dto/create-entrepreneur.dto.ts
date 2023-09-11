@@ -48,7 +48,7 @@ export class CreateEntrepreneurDto {
     readonly valueDeslocation: string
 
     @IsString()
-    readonly opration: string
+    readonly operation: string
 
     @IsBoolean()
     readonly status?: boolean

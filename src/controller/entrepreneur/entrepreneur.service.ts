@@ -105,7 +105,7 @@ export class EntrepreneurService {
         entrepreneur.state = data.state
         entrepreneur.deslocation = data.deslocation
         entrepreneur.valueDeslocation = data.valueDeslocation
-        entrepreneur.operation = data.opration
+        entrepreneur.operation = data.operation
         entrepreneur.status = data.status
         return this.entrepreneurRepository
             .save(entrepreneur)
