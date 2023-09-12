@@ -110,13 +110,15 @@ export class EntrepreneurService {
         entrepreneur.status = data.status
 
 
-        return this.entrepreneurRepository
+        return await this.entrepreneurRepository
             .save(entrepreneur)
             .then(async (result) => {
+                console.log(result)
                 return <ResultDto>{
                     status: true,
                     mensagem: "Cadastro feito com sucesso!",
-                    access_token: await this.jwtService.sign(payload)
+                    access_token: await this.jwtService.sign(payload),
+                    entrepreneurId: result.entrepreneurId
                 }
             })
             .catch((error) => {
