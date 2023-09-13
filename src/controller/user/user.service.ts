@@ -17,27 +17,6 @@ export class UserService {
     }
 
     async register(data: CreateUserDto): Promise<ResultDto> {
-        const existingEmailUser = await this.userRepository.findOne({
-            where: { email: data.email }
-        })
-
-        if (existingEmailUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Email já está em uso!"
-            }
-        }
-
-        const existingDocUser = await this.userRepository.findOne({
-            where: { doc: data.doc }
-        })
-
-        if (existingDocUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Cpf já está em uso!"
-            }
-        }
         if (data.password.length < 5) {
             return <ResultDto>{
                 status: false,
@@ -45,11 +24,52 @@ export class UserService {
             }
         }
 
+        const existingEmailUser = await this.userRepository.findOne({
+            where: { email: data.email }
+        })
+
+        if (existingEmailUser) {
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Email já está em uso!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const existingDocUser = await this.userRepository.findOne({
+            where: { doc: data.doc }
+        })
+
+        if (existingDocUser) {
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Cpf já está em uso!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
         if (data.name == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo nome é obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo nome é obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        if (data.phone == null) {
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo telefone é obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const user = new User()
@@ -63,7 +83,8 @@ export class UserService {
             .then((result) => {
                 return <ResultDto>{
                     status: true,
-                    mensagem: "Cadastro feito com sucesso!"
+                    mensagem: "Cadastro feito com sucesso!",
+                    userId: result.userId
                 }
             })
             .catch((error) => {

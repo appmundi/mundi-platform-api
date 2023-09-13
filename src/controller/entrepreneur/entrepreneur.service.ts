@@ -12,7 +12,7 @@ export class EntrepreneurService {
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
         private jwtService: JwtService
-    ) { }
+    ) {}
 
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurRepository.find({
@@ -23,15 +23,22 @@ export class EntrepreneurService {
     async register(data: CreateEntrepreneurDto): Promise<ResultDto> {
         const payload = { sub: data.email, username: data.doc }
 
+        if (data.password === null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo senha é obrigatorio!"
+            }
+        }
+
         const existingEmailUser = await this.entrepreneurRepository.findOne({
             where: { email: data.email }
         })
 
         if (existingEmailUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Email já está em uso!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "Email já está em uso!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const existingDocUser = await this.entrepreneurRepository.findOne({
@@ -39,57 +46,71 @@ export class EntrepreneurService {
         })
 
         if (existingDocUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Cpf já está em uso!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "CPF já está em uso!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.address == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo endereco e obrigatorio!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "Campo endereco e obrigatorio!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         if (data.companyName == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo nome da empresa e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo nome da empresa e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.name == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo nome e obrigatorio!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "Campo nome e obrigatorio!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         if (data.addressNumber == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo numero de endereco e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo numero de endereco e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.cep == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo cep e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo cep e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.city == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo cidade e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo cidade e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.state == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo estado e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo estado e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         const entrepreneur = new Entrepreneur()
-
 
         entrepreneur.name = data.name
         entrepreneur.email = data.email
@@ -109,7 +130,6 @@ export class EntrepreneurService {
         entrepreneur.operation = data.operation
         entrepreneur.status = data.status
 
-
         return await this.entrepreneurRepository
             .save(entrepreneur)
             .then(async (result) => {
@@ -122,7 +142,6 @@ export class EntrepreneurService {
                 }
             })
             .catch((error) => {
-                
                 return <ResultDto>{
                     status: false,
                     mensagem: "Erro ao cadastrar!"
