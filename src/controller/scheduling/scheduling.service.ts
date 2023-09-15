@@ -53,4 +53,16 @@ export class SchedulingService {
     async findAllSchedules(): Promise<Schedule[]> {
         return await this.scheduleRepository.find()
     }
+
+    async findByUserId(userId: number): Promise<Schedule[]> {
+        return await this.scheduleRepository.find({
+            where: { user: { userId } }
+        })
+    }
+
+    async findByEntrepreneurId(entrepreneurId: number): Promise<Schedule[]> {
+        return await this.scheduleRepository.find({
+            where: { entrepreneur: { entrepreneurId } }
+        })
+    }
 }
