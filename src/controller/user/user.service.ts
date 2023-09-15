@@ -17,6 +17,41 @@ export class UserService {
     }
 
     async register(data: CreateUserDto): Promise<ResultDto> {
+        const existingEmailUser = await this.userRepository.findOne({
+            where: { email: data.email }
+        })
+
+        if (existingEmailUser) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Email já está em uso!"
+            }
+        }
+
+        const existingDocUser = await this.userRepository.findOne({
+            where: { doc: data.doc }
+        })
+
+        if (existingDocUser) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Cpf já está em uso!"
+            }
+        }
+        if (data.password.length < 5) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo senha tem que ter no minimo 5 caracter!"
+            }
+        }
+
+        if (data.name == null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo nome é obrigatorio!"
+            }
+        }
+
         const user = new User()
         user.name = data.name
         user.email = data.email
@@ -43,12 +78,12 @@ export class UserService {
         return this.userRepository.findOne({ where: { email } })
     }
 
-    async getUserById(id: number): Promise<User | undefined> {
-        return this.userRepository.findOne({ where: { id } })
+    async getUserById(userId: number): Promise<User | undefined> {
+        return this.userRepository.findOne({ where: { userId } })
     }
 
-    async updateUser(id: number, updateUserDto: User): Promise<User> {
-        const user = await this.getUserById(id)
+    async updateUser(userId: number, updateUserDto: User): Promise<User> {
+        const user = await this.getUserById(userId)
         if (!user) {
             throw new HttpException(
                 {
@@ -66,8 +101,8 @@ export class UserService {
         return this.userRepository.save(user)
     }
 
-    async deleteUser(id: number): Promise<void> {
-        const user = await this.getUserById(id)
+    async deleteUser(userId: number): Promise<void> {
+        const user = await this.getUserById(userId)
         if (!user) {
             throw new HttpException(
                 {
@@ -78,5 +113,13 @@ export class UserService {
             )
         }
         await this.userRepository.remove(user)
+    }
+
+    async findOneByEmail(email: string): Promise<User | null> {
+        return this.userRepository.findOne({ where: { email } })
+    }
+
+    async findOneByCpf(doc: string): Promise<User | null> {
+        return this.userRepository.findOne({ where: { doc } })
     }
 }

@@ -4,11 +4,25 @@ import { AppService } from "./app.service"
 import { AuthModule } from "./auth/auth.module"
 import { EntrepreneurModule } from "./controller/entrepreneur/entrepreneur.module"
 import { GeolocationModule } from "./controller/geolocalization/geo.module"
+import { AvaliationModule } from "./controller/avaliation/avaliation.module"
+import { SchedulingModule } from "./controller/scheduling/scheduling.module"
+import { UserModule } from "./controller/user/user.module"
+import { WorkModule } from "./controller/work/work.module"
+import { UploadModule } from "./controller/uploads/upload.module"
 
 require("dotenv").config()
 
 @Module({
-    imports: [AuthModule, EntrepreneurModule, GeolocationModule],
+    imports: [
+        AuthModule,
+        UserModule,
+        EntrepreneurModule,
+        GeolocationModule,
+        AvaliationModule,
+        WorkModule,
+        SchedulingModule,
+        UploadModule
+    ],
     controllers: [AppController],
     providers: [AppService]
 })

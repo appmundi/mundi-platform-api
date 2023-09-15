@@ -1,9 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm"
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
+import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
+import { Work } from "src/controller/work/entities/work.entity"
+import { Image } from "src/controller/uploads/entities/upload.entity"
 
 @Entity()
 export class Entrepreneur {
     @PrimaryGeneratedColumn()
-    id: number
+    entrepreneurId: number
 
     @Column({ length: 200 })
     name: string
@@ -24,20 +27,44 @@ export class Entrepreneur {
     category: string
 
     @Column({ length: 200 })
-    profession: string
+    companyName: string
 
     @Column()
     optionwork: boolean
 
     @Column()
-    localization: string
+    address: string
 
     @Column()
-    deslocation: number
+    addressNumber: string
 
-    @Column({ length: 25 })
-    operation: string
+    @Column()
+    cep: string
+
+    @Column()
+    city: string
+
+    @Column()
+    state: string
+
+    @Column()
+    deslocation: string
+
+    @Column()
+    valueDeslocation: string
+
+    @Column({ type: 'json'})
+    operation: JSON
 
     @Column()
     status?: boolean
+
+    @OneToMany(() => Avaliation, (evaluation) => evaluation.entrepreneur)
+    avaliation: Avaliation[]
+
+    @OneToMany(() => Work, (work) => work.entrepreneur)
+    work: Work[]
+
+    @OneToMany(() => Image, (image) => image.entrepreneur)
+    images: Image[]
 }
