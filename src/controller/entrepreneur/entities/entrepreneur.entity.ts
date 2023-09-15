@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
 import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
 import { Work } from "src/controller/work/entities/work.entity"
 import { Image } from "src/controller/uploads/entities/upload.entity"
+import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
 
 @Entity()
 export class Entrepreneur {
@@ -53,11 +54,14 @@ export class Entrepreneur {
     @Column()
     valueDeslocation: string
 
-    @Column({ type: 'json'})
+    @Column({ type: "json" })
     operation: JSON
 
     @Column()
     status?: boolean
+
+    @OneToMany(() => Schedule, (schedulling) => schedulling.entrepreneur)
+    schedulling: Schedule[]
 
     @OneToMany(() => Avaliation, (evaluation) => evaluation.entrepreneur)
     avaliation: Avaliation[]

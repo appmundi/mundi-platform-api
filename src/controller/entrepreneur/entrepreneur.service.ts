@@ -16,7 +16,7 @@ export class EntrepreneurService {
 
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurRepository.find({
-            relations: ["avaliation", "work", "images"]
+            relations: ["avaliation", "work", "images", "schedulling"]
         })
     }
 

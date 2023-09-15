@@ -13,7 +13,9 @@ export class UserService {
     ) {}
 
     async findAll(): Promise<User[]> {
-        return this.userRepository.find()
+        return this.userRepository.find({
+            relations: ["schedulling"]
+        })
     }
 
     async register(data: CreateUserDto): Promise<ResultDto> {

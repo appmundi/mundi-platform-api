@@ -37,4 +37,20 @@ export class SchedulingService {
 
         return "Agendamento criado com sucesso."
     }
+    async deleteSchedule(id: number): Promise<string> {
+        const schedule = await this.scheduleRepository.findOne({
+            where: { id }
+        })
+
+        if (!schedule) {
+            throw new Error("Agendamento não encontrado.")
+        }
+
+        await this.scheduleRepository.remove(schedule)
+
+        return "Agendamento excluído com sucesso."
+    }
+    async findAllSchedules(): Promise<Schedule[]> {
+        return await this.scheduleRepository.find()
+    }
 }

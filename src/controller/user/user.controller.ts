@@ -31,12 +31,9 @@ export class UserController {
         private authService: AuthService
     ) {}
 
-    @UseGuards(JwtAuthGuard)
     @Get("searchAll")
     async findAll(): Promise<ReturnUserDto[]> {
-        return (await this.userService.findAll()).map(
-            (user_register) => new ReturnUserDto(user_register)
-        )
+        return this.userService.findAll()
     }
 
     @UsePipes(ValidationPipe)
