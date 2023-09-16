@@ -1,4 +1,4 @@
-import { IsEmail, IsString } from "class-validator"
+import { IsDate, IsEmail, IsString } from "class-validator"
 
 export class CreateUserDto {
     @IsString({ message: "O nome é Obrigatorio" })
@@ -13,6 +13,9 @@ export class CreateUserDto {
 
     @IsString()
     readonly doc: string
+
+    @IsDate()
+    readonly date: Date
 
     @IsString()
     readonly phone: string

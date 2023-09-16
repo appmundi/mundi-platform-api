@@ -1,8 +1,16 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
+import {
+    Entity,
+    Column,
+    PrimaryGeneratedColumn,
+    OneToMany,
+    ManyToMany,
+    JoinTable
+} from "typeorm"
 import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
 import { Work } from "src/controller/work/entities/work.entity"
 import { Image } from "src/controller/uploads/entities/upload.entity"
 import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
+import { Category } from "./category.entity"
 
 @Entity()
 export class Entrepreneur {
@@ -23,9 +31,6 @@ export class Entrepreneur {
 
     @Column({ length: 20 })
     phone: string
-
-    @Column({ length: 200 })
-    category: string
 
     @Column({ length: 200 })
     companyName: string
@@ -59,6 +64,10 @@ export class Entrepreneur {
 
     @Column()
     status?: boolean
+
+    @ManyToMany(() => Category, (category) => category.entrepreneur)
+    @JoinTable()
+    category: Category[]
 
     @OneToMany(() => Schedule, (schedulling) => schedulling.entrepreneur)
     schedulling: Schedule[]

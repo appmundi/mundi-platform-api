@@ -31,6 +31,7 @@ export class UserController {
         private authService: AuthService
     ) {}
 
+    @UseGuards(AuthGuard("local"))
     @Get("searchAll")
     async findAll(): Promise<ReturnUserDto[]> {
         return this.userService.findAll()

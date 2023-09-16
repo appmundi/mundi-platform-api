@@ -80,6 +80,7 @@ export class UserService {
         user.password = bcrypt.hashSync(data.password, 8)
         user.doc = data.doc
         user.phone = data.phone
+        user.date = data.date
         return this.userRepository
             .save(user)
             .then((result) => {
@@ -102,7 +103,10 @@ export class UserService {
     }
 
     async getUserById(userId: number): Promise<User | undefined> {
-        return this.userRepository.findOne({ where: { userId } })
+        return this.userRepository.findOne({
+            where: { userId },
+            relations: ["schedulling"]
+        })
     }
 
     async updateUser(userId: number, updateUserDto: User): Promise<User> {

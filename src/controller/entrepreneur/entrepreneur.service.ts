@@ -117,7 +117,7 @@ export class EntrepreneurService {
         entrepreneur.password = bcrypt.hashSync(data.password, 8)
         entrepreneur.doc = data.doc
         entrepreneur.phone = data.phone
-        entrepreneur.category = data.category
+        entrepreneur.category = []
         entrepreneur.companyName = data.companyName
         entrepreneur.optionwork = data.optionwork
         entrepreneur.address = data.address
@@ -149,8 +149,13 @@ export class EntrepreneurService {
             })
     }
 
-    async findOne(category: string): Promise<Entrepreneur | undefined> {
-        return this.entrepreneurRepository.findOne({ where: { category } })
+    async findByCategory(category: string): Promise<Entrepreneur[]> {
+        const entrepreneurCategory = await this.entrepreneurRepository
+            .createQueryBuilder("entrepreneur")
+            .innerJoin("entrepreneur.category", "category")
+            .where("category.type = :type", { nome: category })
+            .getMany()
+        return entrepreneurCategory
     }
 
     async getUserById(

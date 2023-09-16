@@ -21,6 +21,9 @@ export class User {
     @Column()
     phone: string
 
+    @Column()
+    date: Date
+
     @OneToMany(() => Schedule, (schedulling) => schedulling.user)
     schedulling: Schedule[]
 }
