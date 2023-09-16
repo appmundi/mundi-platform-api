@@ -10,7 +10,9 @@ import {
     HttpStatus,
     Put,
     Delete,
-    Param
+    Param,
+    Request,
+    UnauthorizedException
 } from "@nestjs/common"
 import { EntrepreneurService } from "./entrepreneur.service"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
@@ -19,10 +21,13 @@ import { ResultDto } from "src/dto/result.dto"
 import { ValidateDoc } from "../helpers/validate.cpf"
 import { ValidatePhone } from "../helpers/validate.phone"
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
+import { AuthGuard } from "@nestjs/passport"
+import { AuthService } from "src/auth/auth.service"
 
 @Controller("entrepreneur")
 export class EntrepreneurController {
-    constructor(private readonly entrepreneurService: EntrepreneurService) {}
+    constructor(private readonly entrepreneurService: EntrepreneurService, private authService: AuthService) { }
+
 
     @UsePipes(ValidationPipe)
     @Post("register")
@@ -66,5 +71,23 @@ export class EntrepreneurController {
     @Delete(":id")
     async deleteUser(@Param("id") id: number): Promise<void> {
         return this.entrepreneurService.deleteUser(id)
+    }
+
+
+    @Post("login")
+    async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
+
+        try {
+
+            const { name,  entrepreneurId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);
+
+            if (name && entrepreneurId) {
+                return this.authService.login(entrepreneurId, name)
+            } else {
+                throw new UnauthorizedException()
+            }
+        } catch (e) {
+            throw new UnauthorizedException()
+        }
     }
 }

@@ -1,36 +1,58 @@
-import { Injectable } from "@nestjs/common"
+import { Injectable, UnauthorizedException } from "@nestjs/common"
 import { UserService } from "../controller/user/user.service"
+import { EntrepreneurService } from "src/controller/entrepreneur/entrepreneur.service"
 import * as bcrypt from "bcrypt"
 import { JwtService } from "@nestjs/jwt"
+import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
+import { User } from "src/controller/user/entities/user.entity"
 
 @Injectable()
 export class AuthService {
     constructor(
         private userService: UserService,
+        private entrepreneurService: EntrepreneurService,
         private jwtService: JwtService
-    ) {}
+    ) { }
 
-    async validateUser(emailOrCpf: string, password: string): Promise<any> {
+    private async validateUserOrEntrepreneur(
+        emailOrCpf: string,
+        password: string,
+        isEntrepreneur: boolean
+    ): Promise<Entrepreneur | User> {
+        console.log(emailOrCpf, password, isEntrepreneur)
         const isEmail = emailOrCpf.includes("@")
+        const service = isEntrepreneur
+            ? this.entrepreneurService
+            : this.userService
 
-        let user
-        if (isEmail) {
-            user = await this.userService.findOne(emailOrCpf)
-        } else {
-            user = await this.userService.findOneByCpf(emailOrCpf)
-        }
+        const user = isEmail
+            ? await service.findOneByEmail(emailOrCpf)
+            : await service.findOneByCpf(emailOrCpf)
+
         if (user && (await bcrypt.compare(password, user.password))) {
-            const { password, ...result } = user
-            return result
+
+            return user
         }
         return null
     }
 
-    async login(user: any) {
-        const payload = { sub: user.userId, username: user.username }
+    async validateUser(emailOrCpf: string, password: string, isEntrepreneur: boolean): Promise<any> {
+        return this.validateUserOrEntrepreneur(emailOrCpf, password, isEntrepreneur)
+    }
+
+    async validateEntrepreneur(
+        emailOrCpf: string,
+        password: string,
+        isEntrepreneur: boolean
+    ): Promise<any> {
+        return this.validateUserOrEntrepreneur(emailOrCpf, password, isEntrepreneur)
+    }
+
+    async login(userId: string, username: string) {
+        const payload = { id: userId, username: username }
         return {
             status: true,
-            menssage: "Login efetuado com sucesso",
+            message: "Login efetuado com sucesso",
             access_token: await this.jwtService.sign(payload)
         }
     }

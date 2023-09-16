@@ -199,6 +199,14 @@ export class EntrepreneurService {
         return this.entrepreneurRepository.save(entrepreneur)
     }
 
+    async findOneByEmail(email: string): Promise<Entrepreneur | null> {
+        return this.entrepreneurRepository.findOne({ where: { email } })
+    }
+
+    async findOneByCpf(doc: string): Promise<Entrepreneur | null> {
+        return this.entrepreneurRepository.findOne({ where: { doc } })
+    }
+
     async deleteUser(entrepreneurId: number): Promise<void> {
         const entrepreneur = await this.getUserById(entrepreneurId)
         if (!entrepreneur) {

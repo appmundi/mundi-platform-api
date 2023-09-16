@@ -11,7 +11,8 @@ import {
     HttpStatus,
     Put,
     Param,
-    Delete
+    Delete,
+    UnauthorizedException
 } from "@nestjs/common"
 import { AuthGuard } from "@nestjs/passport"
 import { UserService } from "./user.service"
@@ -29,7 +30,7 @@ export class UserController {
     constructor(
         private readonly userService: UserService,
         private authService: AuthService
-    ) {}
+    ) { }
 
     @UseGuards(AuthGuard("local"))
     @Get("searchAll")
@@ -61,10 +62,22 @@ export class UserController {
         return this.userService.register(data)
     }
 
-    @UseGuards(AuthGuard("local"))
     @Post("login")
-    async login(@Request() req) {
-        return this.authService.login(req.user)
+    async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
+
+
+        try {
+
+            const { name, userId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);
+
+            if (name && userId ) {
+                return this.authService.login(userId, name)
+            } else {
+                throw new UnauthorizedException()
+            }
+        } catch (_) {
+            throw new UnauthorizedException()
+        }
     }
 
     @UseGuards(JwtAuthGuard)
