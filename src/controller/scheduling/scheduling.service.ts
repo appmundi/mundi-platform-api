@@ -3,6 +3,7 @@ import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { Schedule } from "./entities/scheduling.entity"
+import { Modality } from "../modality/entities/modality.entity"
 
 @Injectable()
 export class SchedulingService {
@@ -12,18 +13,24 @@ export class SchedulingService {
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
         @Inject("SCHEDULE_REPOSITORY")
-        private scheduleRepository: Repository<Schedule>
+        private scheduleRepository: Repository<Schedule>,
+        @Inject("MODALITY_REPOSITORY")
+        private modalityRepository: Repository<Modality>
     ) { }
 
     async scheduleService(
         userId: number,
+        modalityId: number,
         entrepreneurId: number,
         scheduledDate: Date
     ) {
         const user = await this.userRepository.findOne({ where: { userId } })
+
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
         })
+
+        const modality = await this.modalityRepository.findOne({ where: { id: modalityId } })
 
         if (!user || !entrepreneur) {
             throw new Error("Usuário ou prestador de serviços não encontrado.")
@@ -32,6 +39,7 @@ export class SchedulingService {
         schedule.user = user
         schedule.entrepreneur = entrepreneur
         schedule.scheduledDate = scheduledDate
+        schedule.modality = modality
 
         await this.scheduleRepository.save(schedule)
 
@@ -56,9 +64,7 @@ export class SchedulingService {
 
     async findByUserId(userId: number): Promise<Schedule[]> {
         return await this.scheduleRepository.find({
-            relations: {
-                entrepreneur: true
-            },
+            relations: ['entrepreneur', 'user', 'modality'],
             where: { user: { userId } }
         })
     }

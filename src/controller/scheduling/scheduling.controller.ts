@@ -17,6 +17,7 @@ export class SchedulingController {
     async scheduleService(
         @Body()
         body: {
+            modalityId: number
             entrepreneurId: number
             scheduledDate: Date
         },
@@ -40,6 +41,7 @@ export class SchedulingController {
             const result = await this.schedulingService.scheduleService(
                 userId,
                 body.entrepreneurId,
+                body.modalityId,
                 body.scheduledDate
             )
 

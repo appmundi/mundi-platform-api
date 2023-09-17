@@ -7,6 +7,7 @@ import { ScheduleProviders } from "./scheduling.providers"
 import { TypeOrmModule } from "@nestjs/typeorm"
 import { UserProviders } from "../user/user.providers"
 import { EntrepreneurProviders } from "../entrepreneur/entrepreneur.providers"
+import { ModalityProviders } from "../modality/modality.providers"
 
 @Module({
     imports: [
@@ -21,7 +22,8 @@ import { EntrepreneurProviders } from "../entrepreneur/entrepreneur.providers"
         SchedulingService,
         ...ScheduleProviders,
         ...UserProviders,
-        ...EntrepreneurProviders
+        ...EntrepreneurProviders,
+        ...ModalityProviders
     ]
 })
 export class SchedulingModule {}

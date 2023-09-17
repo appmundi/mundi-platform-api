@@ -3,10 +3,12 @@ import {
     PrimaryGeneratedColumn,
     Column,
     ManyToOne,
-    JoinColumn
+    JoinColumn,
+    OneToOne
 } from "typeorm"
 import { User } from "src/controller/user/entities/user.entity"
 import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
+import { Modality } from "src/controller/modality/entities/modality.entity"
 
 @Entity()
 export class Schedule {
@@ -17,10 +19,15 @@ export class Schedule {
     @JoinColumn()
     user: User
 
-    @ManyToOne(() => Entrepreneur, )
+    @ManyToOne(() => Entrepreneur, entreprepreneur => entreprepreneur.entrepreneurId)
     @JoinColumn()
     entrepreneur: Entrepreneur
 
     @Column({ type: "timestamp" })
     scheduledDate: Date
+
+    @OneToOne(() => Modality)
+    @JoinColumn()
+    modality: Modality
+
 }
