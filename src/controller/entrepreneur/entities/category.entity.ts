@@ -9,6 +9,4 @@ export class Category {
     @Column()
     type: string
 
-    @ManyToMany(() => Entrepreneur, (entrepreneur) => entrepreneur.category)
-    entrepreneur: Entrepreneur[]
 }

@@ -76,7 +76,6 @@ export class EntrepreneurController {
 
     @Post("login")
     async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
-
         try {
 
             const { name,  entrepreneurId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);

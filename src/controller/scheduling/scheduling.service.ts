@@ -13,7 +13,7 @@ export class SchedulingService {
         private entrepreneurRepository: Repository<Entrepreneur>,
         @Inject("SCHEDULE_REPOSITORY")
         private scheduleRepository: Repository<Schedule>
-    ) {}
+    ) { }
 
     async scheduleService(
         userId: number,
@@ -56,6 +56,9 @@ export class SchedulingService {
 
     async findByUserId(userId: number): Promise<Schedule[]> {
         return await this.scheduleRepository.find({
+            relations: {
+                entrepreneur: true
+            },
             where: { user: { userId } }
         })
     }

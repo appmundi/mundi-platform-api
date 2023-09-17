@@ -17,7 +17,7 @@ export class Schedule {
     @JoinColumn()
     user: User
 
-    @ManyToOne(() => Entrepreneur)
+    @ManyToOne(() => Entrepreneur, )
     @JoinColumn()
     entrepreneur: Entrepreneur
 

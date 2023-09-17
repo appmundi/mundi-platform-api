@@ -19,7 +19,6 @@ export class AuthService {
         password: string,
         isEntrepreneur: boolean
     ): Promise<Entrepreneur | User> {
-        console.log(emailOrCpf, password, isEntrepreneur)
         const isEmail = emailOrCpf.includes("@")
         const service = isEntrepreneur
             ? this.entrepreneurService

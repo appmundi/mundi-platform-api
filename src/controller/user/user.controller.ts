@@ -64,8 +64,6 @@ export class UserController {
 
     @Post("login")
     async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
-
-
         try {
 
             const { name, userId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);
@@ -75,7 +73,7 @@ export class UserController {
             } else {
                 throw new UnauthorizedException()
             }
-        } catch (_) {
+        } catch (e) {
             throw new UnauthorizedException()
         }
     }

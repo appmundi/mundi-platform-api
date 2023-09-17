@@ -53,6 +53,9 @@ export class Entrepreneur {
     @Column()
     state: string
 
+    @Column('simple-array')
+    categories: number[]
+
     @Column()
     deslocation: string
 
@@ -64,10 +67,6 @@ export class Entrepreneur {
 
     @Column()
     status?: boolean
-
-    @ManyToMany(() => Category, (category) => category.entrepreneur)
-    @JoinTable()
-    category: Category[]
 
     @OneToMany(() => Schedule, (schedulling) => schedulling.entrepreneur)
     schedulling: Schedule[]

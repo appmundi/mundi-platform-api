@@ -80,7 +80,7 @@ export class UserService {
         user.password = bcrypt.hashSync(data.password, 8)
         user.doc = data.doc
         user.phone = data.phone
-        user.date = data.date
+        //user.date = data.date
         return this.userRepository
             .save(user)
             .then((result) => {

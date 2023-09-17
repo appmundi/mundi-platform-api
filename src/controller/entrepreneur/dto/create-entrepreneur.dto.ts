@@ -20,11 +20,10 @@ export class CreateEntrepreneurDto {
     @IsString()
     readonly doc: string
 
-    @IsJSON()
-    readonly category: any
-
     @IsBoolean()
     readonly optionwork: boolean
+
+    readonly categories: number[]
 
     @IsString()
     readonly address: string

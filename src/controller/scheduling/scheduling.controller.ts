@@ -5,13 +5,13 @@ import { Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
 
 interface JwtPayload {
-    userId: number
-    entrepreneurId: number
+    id: number,
+    username: string
 }
 
 @Controller("scheduling")
 export class SchedulingController {
-    constructor(private readonly schedulingService: SchedulingService) {}
+    constructor(private readonly schedulingService: SchedulingService) { }
 
     @Post("schedule")
     async scheduleService(
@@ -20,7 +20,7 @@ export class SchedulingController {
             entrepreneurId: number
             scheduledDate: Date
         },
-        @Headers("authorization") authorizationHeader: string
+        @Headers("Authorization") authorizationHeader: string
     ) {
         try {
             if (!authorizationHeader) {
@@ -30,11 +30,12 @@ export class SchedulingController {
             const token = authorizationHeader.split(" ")[1]
             const decodedToken = jwt.decode(token) as JwtPayload
 
-            if (!decodedToken || !decodedToken.userId) {
+
+            if (!decodedToken || !decodedToken.id) {
                 throw new Error("Token JWT inválido")
             }
 
-            const userId = decodedToken.userId
+            const userId = decodedToken.id
 
             const result = await this.schedulingService.scheduleService(
                 userId,
@@ -60,12 +61,12 @@ export class SchedulingController {
             const token = authorizationHeader.split(" ")[1]
             const decodedToken = jwt.decode(token) as JwtPayload
 
-            if (!decodedToken || !decodedToken.userId) {
+            if (!decodedToken || !decodedToken.id) {
                 throw new Error("Token JWT inválido")
             }
 
-            const userId = decodedToken.userId
-            const schedules = await this.schedulingService.findByUserId(userId)
+            const schedules = await this.schedulingService.findByUserId(decodedToken.id)
+
             return schedules
         } catch (error) {
             return null
@@ -84,14 +85,16 @@ export class SchedulingController {
             const token = authorizationHeader.split(" ")[1]
             const decodedToken = jwt.decode(token) as JwtPayload
 
-            if (!decodedToken || !decodedToken.entrepreneurId) {
+            if (!decodedToken || !decodedToken.id) {
                 throw new Error("Token JWT inválido")
             }
 
-            const entrepreneurId = decodedToken.entrepreneurId
+            const entrepreneurId = decodedToken.id
             const schedules = await this.schedulingService.findByUserId(
                 entrepreneurId
             )
+
+
             return schedules
         } catch (error) {
             return null

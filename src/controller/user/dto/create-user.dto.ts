@@ -14,8 +14,8 @@ export class CreateUserDto {
     @IsString()
     readonly doc: string
 
-    @IsDate()
-    readonly date: Date
+    /*@IsDate()
+    readonly date: Date*/
 
     @IsString()
     readonly phone: string

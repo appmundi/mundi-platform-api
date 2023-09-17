@@ -117,7 +117,7 @@ export class EntrepreneurService {
         entrepreneur.password = bcrypt.hashSync(data.password, 8)
         entrepreneur.doc = data.doc
         entrepreneur.phone = data.phone
-        entrepreneur.category = []
+        entrepreneur.categories = data.categories
         entrepreneur.companyName = data.companyName
         entrepreneur.optionwork = data.optionwork
         entrepreneur.address = data.address
@@ -133,7 +133,6 @@ export class EntrepreneurService {
         return await this.entrepreneurRepository
             .save(entrepreneur)
             .then(async (result) => {
-                console.log(result)
                 return <ResultDto>{
                     status: true,
                     mensagem: "Cadastro feito com sucesso!",
@@ -147,15 +146,6 @@ export class EntrepreneurService {
                     mensagem: "Erro ao cadastrar!"
                 }
             })
-    }
-
-    async findByCategory(category: string): Promise<Entrepreneur[]> {
-        const entrepreneurCategory = await this.entrepreneurRepository
-            .createQueryBuilder("entrepreneur")
-            .innerJoin("entrepreneur.category", "category")
-            .where("category.type = :type", { nome: category })
-            .getMany()
-        return entrepreneurCategory
     }
 
     async getUserById(
@@ -185,7 +175,7 @@ export class EntrepreneurService {
         entrepreneur.password = updateUserDto.password
         entrepreneur.doc = updateUserDto.doc
         entrepreneur.phone = updateUserDto.phone
-        entrepreneur.category = updateUserDto.category
+        entrepreneur.categories = updateUserDto.categories
         entrepreneur.companyName = updateUserDto.companyName
         entrepreneur.optionwork = updateUserDto.optionwork
         entrepreneur.address = updateUserDto.address
