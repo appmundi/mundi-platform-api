@@ -3,15 +3,18 @@ import { Controller, Post, Body, Get, Param, Headers } from "@nestjs/common"
 import { SchedulingService } from "./scheduling.service"
 import { Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
+import { User } from "../user/entities/user.entity"
+import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
+import { Modality } from "../modality/entities/modality.entity"
 
 interface JwtPayload {
-    id: number,
+    id: number
     username: string
 }
 
 @Controller("scheduling")
 export class SchedulingController {
-    constructor(private readonly schedulingService: SchedulingService) { }
+    constructor(private readonly schedulingService: SchedulingService) {}
 
     @Post("schedule")
     async scheduleService(
@@ -30,7 +33,6 @@ export class SchedulingController {
 
             const token = authorizationHeader.split(" ")[1]
             const decodedToken = jwt.decode(token) as JwtPayload
-
 
             if (!decodedToken || !decodedToken.id) {
                 throw new Error("Token JWT inválido")
@@ -67,9 +69,34 @@ export class SchedulingController {
                 throw new Error("Token JWT inválido")
             }
 
-            const schedules = await this.schedulingService.findByUserId(decodedToken.id)
+            const schedules = await this.schedulingService.findByUserId(
+                decodedToken.id
+            )
+            const mappedSchedules: Schedule[] = schedules.map(
+                (scheduleResponse) => {
+                    const schedule = new Schedule()
 
-            return schedules
+                    schedule.id = scheduleResponse.id
+                    schedule.scheduledDate = scheduleResponse.scheduledDate
+
+                    const user = new User()
+                    user.userId = scheduleResponse.user.userId
+                    schedule.user = user
+
+                    const entrepreneur = new Entrepreneur()
+                    entrepreneur.entrepreneurId =
+                        scheduleResponse.entrepreneur.entrepreneurId
+                    schedule.entrepreneur = entrepreneur
+
+                    const modality = new Modality()
+                    modality.id = scheduleResponse.modality.id
+                    schedule.modality = modality
+
+                    return schedule
+                }
+            )
+
+            return mappedSchedules
         } catch (error) {
             return null
         }
@@ -95,7 +122,6 @@ export class SchedulingController {
             const schedules = await this.schedulingService.findByUserId(
                 entrepreneurId
             )
-
 
             return schedules
         } catch (error) {
