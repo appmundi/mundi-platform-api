@@ -55,7 +55,14 @@ export class EntrepreneurController {
 
     @Get("searchAll")
     async findAll(): Promise<Entrepreneur[]> {
+        console.log('trying to retrive all Entrepreneurs')
         return this.entrepreneurService.findAll()
+    }
+
+    @Get("search/:id")
+    async findOneEntrepreneur(@Param('id') entrepreneurId: number): Promise<Entrepreneur> {
+        console.log('trying to retrive Entrepreneur', entrepreneurId)
+        return this.entrepreneurService.findOneById(entrepreneurId);
     }
 
     @UseGuards(JwtAuthGuard)

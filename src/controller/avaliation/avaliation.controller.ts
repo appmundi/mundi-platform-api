@@ -11,19 +11,20 @@ import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
 
 @Controller("avaliation")
 export class AvaliationController {
-    constructor(private readonly avaliationService: AvaliationService) {}
+    constructor(private readonly avaliationService: AvaliationService) { }
 
     @UseGuards(JwtAuthGuard)
     @Post(":id/evaluate")
     async evaluateFreelancer(
         @Param("id") entrepreneurId: number,
-        @Body() evaluationData: { rating: number; comment: string }
+        @Body() evaluationData: { rating: number; comment: string, name: string }
     ) {
         try {
             const avaliation = await this.avaliationService.createAvaliation(
                 entrepreneurId,
                 evaluationData.rating,
-                evaluationData.comment
+                evaluationData.comment,
+                evaluationData.name
             )
 
             return { message: "Avaliação enviada com sucesso", avaliation }

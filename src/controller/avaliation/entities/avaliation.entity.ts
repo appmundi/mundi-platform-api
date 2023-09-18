@@ -6,11 +6,14 @@ export class Avaliation {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column()
+    @Column({ type: 'double' } )
     rating: number
 
     @Column()
     comment: string
+
+    @Column()
+    name: string
 
     @ManyToOne(() => Entrepreneur, (entrepreneur) => entrepreneur.avaliation)
     entrepreneur: Entrepreneur

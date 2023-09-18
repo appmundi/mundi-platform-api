@@ -2,7 +2,7 @@ import { Injectable, Inject, HttpStatus, HttpException } from "@nestjs/common"
 import { ResultDto } from "src/dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
-import { Repository } from "typeorm"
+import { EntityManager, QueryRunner, Repository, getConnection, getManager } from "typeorm"
 import { JwtService } from "@nestjs/jwt"
 import * as bcrypt from "bcrypt"
 
@@ -12,7 +12,7 @@ export class EntrepreneurService {
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
         private jwtService: JwtService
-    ) {}
+    ) { }
 
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurRepository.find({
@@ -195,6 +195,11 @@ export class EntrepreneurService {
 
     async findOneByCpf(doc: string): Promise<Entrepreneur | null> {
         return this.entrepreneurRepository.findOne({ where: { doc } })
+    }
+
+    async findOneById(entrepreneurId: number): Promise<Entrepreneur | null> {
+        const entrepreneur = await this.entrepreneurRepository.createQueryBuilder().select(`getEntrepreneurData(${entrepreneurId})`, 'entrepreneur').getRawOne();
+        return entrepreneur.entrepreneur;
     }
 
     async deleteUser(entrepreneurId: number): Promise<void> {
