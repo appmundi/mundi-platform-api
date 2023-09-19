@@ -10,6 +10,7 @@ import { UserModule } from "./controller/user/user.module"
 import { WorkModule } from "./controller/work/work.module"
 import { UploadModule } from "./controller/uploads/upload.module"
 import { ModalityModule } from "./controller/modality/modality.module"
+import { CategoryModule } from "./controller/category/category.module"
 
 require("dotenv").config()
 
@@ -23,7 +24,8 @@ require("dotenv").config()
         WorkModule,
         SchedulingModule,
         UploadModule,
-        ModalityModule
+        ModalityModule,
+        CategoryModule
     ],
     controllers: [AppController],
     providers: [AppService]

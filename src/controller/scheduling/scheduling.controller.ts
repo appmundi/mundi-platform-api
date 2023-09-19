@@ -1,5 +1,5 @@
 // scheduling.controller.ts
-import { Controller, Post, Body, Get, Param, Headers } from "@nestjs/common"
+import { Controller, Post, Body, Get, Headers } from "@nestjs/common"
 import { SchedulingService } from "./scheduling.service"
 import { Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
@@ -90,6 +90,9 @@ export class SchedulingController {
 
                     const modality = new Modality()
                     modality.id = scheduleResponse.modality.id
+                    modality.title = scheduleResponse.modality.title
+                    modality.duration = scheduleResponse.modality.duration
+                    modality.price = scheduleResponse.modality.price
                     schedule.modality = modality
 
                     return schedule

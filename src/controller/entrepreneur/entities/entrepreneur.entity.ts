@@ -3,14 +3,13 @@ import {
     Column,
     PrimaryGeneratedColumn,
     OneToMany,
-    ManyToMany,
-    JoinTable
+    ManyToMany
 } from "typeorm"
 import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
 import { Work } from "src/controller/work/entities/work.entity"
 import { Image } from "src/controller/uploads/entities/upload.entity"
 import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
-import { Category } from "./category.entity"
+import { Category } from "src/controller/category/entities/category.entity"
 
 @Entity()
 export class Entrepreneur {
@@ -53,7 +52,7 @@ export class Entrepreneur {
     @Column()
     state: string
 
-    @Column('simple-array')
+    @Column("simple-array")
     categories: number[]
 
     @Column()
@@ -67,6 +66,9 @@ export class Entrepreneur {
 
     @Column()
     status?: boolean
+
+    @ManyToMany(() => Category, (category) => category.entrepreneur)
+    category: Category[]
 
     @OneToMany(() => Schedule, (schedulling) => schedulling.entrepreneur)
     schedulling: Schedule[]
