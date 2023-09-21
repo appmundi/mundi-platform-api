@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm"
+import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
 
 @Entity()
 export class User {
@@ -19,4 +20,10 @@ export class User {
 
     @Column()
     phone: string
+
+    /*@Column()
+    date: Date*/
+
+    @OneToMany(() => Schedule, (schedulling) => schedulling.user)
+    schedulling: Schedule[]
 }

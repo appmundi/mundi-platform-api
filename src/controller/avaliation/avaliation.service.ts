@@ -14,7 +14,8 @@ export class AvaliationService {
     async createAvaliation(
         freelancerId: number,
         rating: number,
-        comment: string
+        comment: string,
+        name: string
     ): Promise<Avaliation> {
         const entrepreneur = await this.entrepreneurService.getUserById(
             freelancerId
@@ -29,6 +30,7 @@ export class AvaliationService {
         const avaliation = new Avaliation()
         avaliation.rating = rating
         avaliation.comment = comment
+        avaliation.name= name
         avaliation.entrepreneur = entrepreneur
 
         return this.avaliationRepository.save(avaliation)

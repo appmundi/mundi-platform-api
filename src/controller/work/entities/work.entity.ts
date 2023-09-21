@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm"
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from "typeorm"
 import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
+import { Modality } from "src/controller/modality/entities/modality.entity"
 
 @Entity()
 export class Work {
@@ -9,9 +10,9 @@ export class Work {
     @Column()
     service: string
 
-    @Column()
-    value: number
-
     @ManyToOne(() => Entrepreneur, (entrepreneur) => entrepreneur.work)
     entrepreneur: Entrepreneur
+
+    @OneToMany(() => Modality, (Modality) => Modality.work)
+    modalities: Modality[]
 }

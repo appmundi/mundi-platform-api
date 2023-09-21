@@ -9,12 +9,11 @@ export class WorkService {
         @Inject("WORK_REPOSITORY")
         private workRepository: Repository<Work>,
         private entrepreneurService: EntrepreneurService
-    ) {}
+    ) { }
 
     async createWork(
         freelancerId: number,
         service: string,
-        value: number
     ): Promise<Work> {
         const entrepreneur = await this.entrepreneurService.getUserById(
             freelancerId
@@ -28,9 +27,17 @@ export class WorkService {
 
         const work = new Work()
         work.service = service
-        work.value = value
         work.entrepreneur = entrepreneur
 
         return this.workRepository.save(work)
     }
+
+    async findWork(id: number): Promise<Work> {
+        return await this.workRepository.findOne({ where: { id: id } })
+    }
+
+    async findWorks(id: number): Promise<Work> {
+        return await this.workRepository.findOne({ where: { id: id } })
+    } 
+
 }

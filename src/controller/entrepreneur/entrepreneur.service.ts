@@ -12,26 +12,39 @@ export class EntrepreneurService {
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
         private jwtService: JwtService
-    ) { }
+    ) {}
 
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurRepository.find({
-            relations: ["avaliation", "work", "images"]
+            relations: [
+                "category",
+                "avaliation",
+                "work",
+                "images",
+                "schedulling"
+            ]
         })
     }
 
     async register(data: CreateEntrepreneurDto): Promise<ResultDto> {
         const payload = { sub: data.email, username: data.doc }
 
+        if (data.password === null) {
+            return <ResultDto>{
+                status: false,
+                mensagem: "Campo senha é obrigatorio!"
+            }
+        }
+
         const existingEmailUser = await this.entrepreneurRepository.findOne({
             where: { email: data.email }
         })
 
         if (existingEmailUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Email já está em uso!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "Email já está em uso!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const existingDocUser = await this.entrepreneurRepository.findOne({
@@ -39,64 +52,77 @@ export class EntrepreneurService {
         })
 
         if (existingDocUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Cpf já está em uso!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "CPF já está em uso!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.address == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo endereco e obrigatorio!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "Campo endereco e obrigatorio!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         if (data.companyName == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo nome da empresa e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo nome da empresa e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.name == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo nome e obrigatorio!"
-            }
+            throw new HttpException(
+                { status: false, mensagem: "Campo nome e obrigatorio!" },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         if (data.addressNumber == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo numero de endereco e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo numero de endereco e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.cep == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo cep e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo cep e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.city == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo cidade e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo cidade e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         if (data.state == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo estado e obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo estado e obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
         const entrepreneur = new Entrepreneur()
-
 
         entrepreneur.name = data.name
         entrepreneur.email = data.email
         entrepreneur.password = bcrypt.hashSync(data.password, 8)
         entrepreneur.doc = data.doc
         entrepreneur.phone = data.phone
-        entrepreneur.category = data.category
         entrepreneur.companyName = data.companyName
         entrepreneur.optionwork = data.optionwork
         entrepreneur.address = data.address
@@ -109,11 +135,9 @@ export class EntrepreneurService {
         entrepreneur.operation = data.operation
         entrepreneur.status = data.status
 
-
         return await this.entrepreneurRepository
             .save(entrepreneur)
             .then(async (result) => {
-                console.log(result)
                 return <ResultDto>{
                     status: true,
                     mensagem: "Cadastro feito com sucesso!",
@@ -122,16 +146,11 @@ export class EntrepreneurService {
                 }
             })
             .catch((error) => {
-                
                 return <ResultDto>{
                     status: false,
                     mensagem: "Erro ao cadastrar!"
                 }
             })
-    }
-
-    async findOne(category: string): Promise<Entrepreneur | undefined> {
-        return this.entrepreneurRepository.findOne({ where: { category } })
     }
 
     async getUserById(
@@ -161,7 +180,6 @@ export class EntrepreneurService {
         entrepreneur.password = updateUserDto.password
         entrepreneur.doc = updateUserDto.doc
         entrepreneur.phone = updateUserDto.phone
-        entrepreneur.category = updateUserDto.category
         entrepreneur.companyName = updateUserDto.companyName
         entrepreneur.optionwork = updateUserDto.optionwork
         entrepreneur.address = updateUserDto.address
@@ -173,6 +191,22 @@ export class EntrepreneurService {
         entrepreneur.valueDeslocation = updateUserDto.valueDeslocation
         entrepreneur.operation = updateUserDto.operation
         return this.entrepreneurRepository.save(entrepreneur)
+    }
+
+    async findOneByEmail(email: string): Promise<Entrepreneur | null> {
+        return this.entrepreneurRepository.findOne({ where: { email } })
+    }
+
+    async findOneByCpf(doc: string): Promise<Entrepreneur | null> {
+        return this.entrepreneurRepository.findOne({ where: { doc } })
+    }
+
+    async findOneById(entrepreneurId: number): Promise<Entrepreneur | null> {
+        const entrepreneur = await this.entrepreneurRepository
+            .createQueryBuilder()
+            .select(`getEntrepreneurData(${entrepreneurId})`, "entrepreneur")
+            .getRawOne()
+        return entrepreneur.entrepreneur
     }
 
     async deleteUser(entrepreneurId: number): Promise<void> {

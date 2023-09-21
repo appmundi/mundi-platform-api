@@ -13,31 +13,12 @@ export class UserService {
     ) {}
 
     async findAll(): Promise<User[]> {
-        return this.userRepository.find()
+        return this.userRepository.find({
+            relations: ["schedulling"]
+        })
     }
 
     async register(data: CreateUserDto): Promise<ResultDto> {
-        const existingEmailUser = await this.userRepository.findOne({
-            where: { email: data.email }
-        })
-
-        if (existingEmailUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Email já está em uso!"
-            }
-        }
-
-        const existingDocUser = await this.userRepository.findOne({
-            where: { doc: data.doc }
-        })
-
-        if (existingDocUser) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Cpf já está em uso!"
-            }
-        }
         if (data.password.length < 5) {
             return <ResultDto>{
                 status: false,
@@ -45,11 +26,52 @@ export class UserService {
             }
         }
 
+        const existingEmailUser = await this.userRepository.findOne({
+            where: { email: data.email }
+        })
+
+        if (existingEmailUser) {
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Email já está em uso!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const existingDocUser = await this.userRepository.findOne({
+            where: { doc: data.doc }
+        })
+
+        if (existingDocUser) {
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Cpf já está em uso!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
         if (data.name == null) {
-            return <ResultDto>{
-                status: false,
-                mensagem: "Campo nome é obrigatorio!"
-            }
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo nome é obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        if (data.phone == null) {
+            throw new HttpException(
+                {
+                    status: false,
+                    mensagem: "Campo telefone é obrigatorio!"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const user = new User()
@@ -58,12 +80,14 @@ export class UserService {
         user.password = bcrypt.hashSync(data.password, 8)
         user.doc = data.doc
         user.phone = data.phone
+        //user.date = data.date
         return this.userRepository
             .save(user)
             .then((result) => {
                 return <ResultDto>{
                     status: true,
-                    mensagem: "Cadastro feito com sucesso!"
+                    mensagem: "Cadastro feito com sucesso!",
+                    userId: result.userId
                 }
             })
             .catch((error) => {
@@ -79,7 +103,10 @@ export class UserService {
     }
 
     async getUserById(userId: number): Promise<User | undefined> {
-        return this.userRepository.findOne({ where: { userId } })
+        return this.userRepository.findOne({
+            where: { userId },
+            relations: ["schedulling"]
+        })
     }
 
     async updateUser(userId: number, updateUserDto: User): Promise<User> {

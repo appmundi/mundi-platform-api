@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNumber, IsBoolean } from "class-validator"
+import { IsString, IsEmail, IsNumber, IsBoolean, IsJSON } from "class-validator"
 
 export class CreateEntrepreneurDto {
     @IsString({ message: "O nome é Obrigatorio" })
@@ -19,9 +19,6 @@ export class CreateEntrepreneurDto {
 
     @IsString()
     readonly doc: string
-
-    @IsString()
-    readonly category: string
 
     @IsBoolean()
     readonly optionwork: boolean
@@ -47,7 +44,7 @@ export class CreateEntrepreneurDto {
     @IsString()
     readonly valueDeslocation: string
 
-    @IsString()
+    @IsJSON()
     readonly operation: JSON
 
     @IsBoolean()
