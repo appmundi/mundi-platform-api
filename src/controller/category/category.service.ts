@@ -6,7 +6,7 @@ import { EntrepreneurService } from "../entrepreneur/entrepreneur.service"
 @Injectable()
 export class CategoryService {
     constructor(
-        @Inject("GATEGORY_REPOSITORY")
+        @Inject("CATEGORY_REPOSITORY")
         private categoryRepository: Repository<Category>,
         private entrepreneurService: EntrepreneurService
     ) {}
@@ -35,7 +35,7 @@ export class CategoryService {
     async findOneByType(type: string) {
         const category = await this.categoryRepository.findOne({
             where: { type },
-            relations: ["entrepreneur"] // Carregue o relacionamento com o empreendedor
+            relations: ["entrepreneur"]
         })
 
         if (!category) {

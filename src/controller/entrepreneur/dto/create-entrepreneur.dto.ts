@@ -23,8 +23,6 @@ export class CreateEntrepreneurDto {
     @IsBoolean()
     readonly optionwork: boolean
 
-    readonly categories: number[]
-
     @IsString()
     readonly address: string
 

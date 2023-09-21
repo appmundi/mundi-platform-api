@@ -2,13 +2,7 @@ import { Injectable, Inject, HttpStatus, HttpException } from "@nestjs/common"
 import { ResultDto } from "src/dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
-import {
-    EntityManager,
-    QueryRunner,
-    Repository,
-    getConnection,
-    getManager
-} from "typeorm"
+import { Repository } from "typeorm"
 import { JwtService } from "@nestjs/jwt"
 import * as bcrypt from "bcrypt"
 
@@ -23,11 +17,11 @@ export class EntrepreneurService {
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurRepository.find({
             relations: [
+                "category",
                 "avaliation",
                 "work",
                 "images",
-                "schedulling",
-                "category"
+                "schedulling"
             ]
         })
     }
@@ -129,7 +123,6 @@ export class EntrepreneurService {
         entrepreneur.password = bcrypt.hashSync(data.password, 8)
         entrepreneur.doc = data.doc
         entrepreneur.phone = data.phone
-        entrepreneur.categories = data.categories
         entrepreneur.companyName = data.companyName
         entrepreneur.optionwork = data.optionwork
         entrepreneur.address = data.address
@@ -187,7 +180,6 @@ export class EntrepreneurService {
         entrepreneur.password = updateUserDto.password
         entrepreneur.doc = updateUserDto.doc
         entrepreneur.phone = updateUserDto.phone
-        entrepreneur.categories = updateUserDto.categories
         entrepreneur.companyName = updateUserDto.companyName
         entrepreneur.optionwork = updateUserDto.optionwork
         entrepreneur.address = updateUserDto.address

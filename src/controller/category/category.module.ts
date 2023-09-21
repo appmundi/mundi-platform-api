@@ -13,8 +13,8 @@ import { EntrepreneurProviders } from "../entrepreneur/entrepreneur.providers"
     imports: [
         DatabaseModule,
         forwardRef(() => AuthModule),
-        TypeOrmModule.forFeature([], "CATEGORY_REPOSITORY"),
-        TypeOrmModule.forFeature([], "ENTREPRENEUR_REPOSITORY")
+        TypeOrmModule.forFeature([], "ENTREPRENEUR_REPOSITORY"),
+        TypeOrmModule.forFeature([], "CATEGORY_REPOSITORY")
     ],
     controllers: [CategoryController],
     providers: [

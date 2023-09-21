@@ -125,8 +125,34 @@ export class SchedulingController {
             const schedules = await this.schedulingService.findByUserId(
                 entrepreneurId
             )
+            const mappedSchedules: Schedule[] = schedules.map(
+                (scheduleResponse) => {
+                    const schedule = new Schedule()
 
-            return schedules
+                    schedule.id = scheduleResponse.id
+                    schedule.scheduledDate = scheduleResponse.scheduledDate
+
+                    const user = new User()
+                    user.userId = scheduleResponse.user.userId
+                    schedule.user = user
+
+                    const entrepreneur = new Entrepreneur()
+                    entrepreneur.entrepreneurId =
+                        scheduleResponse.entrepreneur.entrepreneurId
+                    schedule.entrepreneur = entrepreneur
+
+                    const modality = new Modality()
+                    modality.id = scheduleResponse.modality.id
+                    modality.title = scheduleResponse.modality.title
+                    modality.duration = scheduleResponse.modality.duration
+                    modality.price = scheduleResponse.modality.price
+                    schedule.modality = modality
+
+                    return schedule
+                }
+            )
+
+            return mappedSchedules
         } catch (error) {
             return null
         }

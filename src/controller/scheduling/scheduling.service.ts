@@ -16,7 +16,21 @@ export class SchedulingService {
         private scheduleRepository: Repository<Schedule>,
         @Inject("MODALITY_REPOSITORY")
         private modalityRepository: Repository<Modality>
-    ) { }
+    ) {}
+
+    async isTimeSlotAvailable(
+        entrepreneurId: number,
+        scheduledDate: Date
+    ): Promise<boolean> {
+        const existingSchedule = await this.scheduleRepository.findOne({
+            where: {
+                entrepreneur: { entrepreneurId },
+                scheduledDate
+            }
+        })
+
+        return !existingSchedule
+    }
 
     async scheduleService(
         userId: number,
@@ -30,11 +44,22 @@ export class SchedulingService {
             where: { entrepreneurId }
         })
 
-        const modality = await this.modalityRepository.findOne({ where: { id: modalityId } })
+        const modality = await this.modalityRepository.findOne({
+            where: { id: modalityId }
+        })
 
         if (!user || !entrepreneur) {
             throw new Error("Usuário ou prestador de serviços não encontrado.")
         }
+
+        const isAvailable = await this.isTimeSlotAvailable(
+            entrepreneurId,
+            scheduledDate
+        )
+        if (!isAvailable) {
+            throw new Error("Horário já agendado.")
+        }
+
         const schedule = new Schedule()
         schedule.user = user
         schedule.entrepreneur = entrepreneur
@@ -64,7 +89,7 @@ export class SchedulingService {
 
     async findByUserId(userId: number): Promise<Schedule[]> {
         return await this.scheduleRepository.find({
-            relations: ['entrepreneur', 'user', 'modality'],
+            relations: ["entrepreneur", "user", "modality"],
             where: { user: { userId } }
         })
     }
