@@ -4,7 +4,6 @@ import {
     Body,
     Get,
     UseGuards,
-    Request,
     ValidationPipe,
     UsePipes,
     HttpException,
@@ -30,7 +29,7 @@ export class UserController {
     constructor(
         private readonly userService: UserService,
         private authService: AuthService
-    ) { }
+    ) {}
 
     @UseGuards(AuthGuard("local"))
     @Get("searchAll")
@@ -63,18 +62,39 @@ export class UserController {
     }
 
     @Post("login")
-    async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
+    async login(
+        @Body()
+        req: {
+            email: string
+            password: string
+            isEntrepreneur: boolean
+        }
+    ) {
         try {
+            const { name, userId, userFound, passwordMatched } =
+                await this.authService.validateUser(
+                    req.email,
+                    req.password,
+                    req.isEntrepreneur
+                )
 
-            const { name, userId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);
-
-            if (name && userId ) {
-                return this.authService.login(userId, name)
-            } else {
-                throw new UnauthorizedException()
+            if (!userFound) {
+                throw new UnauthorizedException("Email não encontrado.")
             }
+
+            if (!passwordMatched) {
+                throw new UnauthorizedException("Senha incorreta.")
+            }
+
+            if (!userId || !name) {
+                throw new UnauthorizedException(
+                    "Não foi possível autenticar o usuário."
+                )
+            }
+
+            return this.authService.login(userId, name)
         } catch (e) {
-            throw new UnauthorizedException()
+            throw new UnauthorizedException("Erro de autenticação.")
         }
     }
 

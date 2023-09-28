@@ -26,8 +26,10 @@ import { AuthService } from "src/auth/auth.service"
 
 @Controller("entrepreneur")
 export class EntrepreneurController {
-    constructor(private readonly entrepreneurService: EntrepreneurService, private authService: AuthService) { }
-
+    constructor(
+        private readonly entrepreneurService: EntrepreneurService,
+        private authService: AuthService
+    ) {}
 
     @UsePipes(ValidationPipe)
     @Post("register")
@@ -55,14 +57,16 @@ export class EntrepreneurController {
 
     @Get("searchAll")
     async findAll(): Promise<Entrepreneur[]> {
-        console.log('trying to retrive all Entrepreneurs')
+        console.log("trying to retrive all Entrepreneurs")
         return this.entrepreneurService.findAll()
     }
 
     @Get("search/:id")
-    async findOneEntrepreneur(@Param('id') entrepreneurId: number): Promise<Entrepreneur> {
-        console.log('trying to retrive Entrepreneur', entrepreneurId)
-        return this.entrepreneurService.findOneById(entrepreneurId);
+    async findOneEntrepreneur(
+        @Param("id") entrepreneurId: number
+    ): Promise<Entrepreneur> {
+        console.log("trying to retrive Entrepreneur", entrepreneurId)
+        return this.entrepreneurService.findOneById(entrepreneurId)
     }
 
     @UseGuards(JwtAuthGuard)
@@ -80,20 +84,34 @@ export class EntrepreneurController {
         return this.entrepreneurService.deleteUser(id)
     }
 
-
     @Post("login")
-    async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
+    async login(
+        @Body()
+        req: {
+            email: string
+            password: string
+            isEntrepreneur: boolean
+        }
+    ) {
         try {
+            const { name, entrepreneurId, userFound, passwordMatched } =
+                await this.authService.validateUser(
+                    req.email,
+                    req.password,
+                    req.isEntrepreneur
+                )
 
-            const { name,  entrepreneurId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);
-
-            if (name && entrepreneurId) {
-                return this.authService.login(entrepreneurId, name)
-            } else {
-                throw new UnauthorizedException()
+            if (!userFound) {
+                throw new UnauthorizedException("Email não encontrado.")
             }
+
+            if (!passwordMatched) {
+                throw new UnauthorizedException("Senha incorreta.")
+            }
+
+            return this.authService.login(entrepreneurId, name)
         } catch (e) {
-            throw new UnauthorizedException()
+            throw new UnauthorizedException("Erro de autenticação.")
         }
     }
 }
