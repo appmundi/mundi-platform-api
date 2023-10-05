@@ -1,5 +1,5 @@
 // scheduling.controller.ts
-import { Controller, Post, Body, Get, Headers } from "@nestjs/common"
+import { Controller, Post, Body, Get, Headers, Query } from "@nestjs/common"
 import { SchedulingService } from "./scheduling.service"
 import { Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
@@ -153,6 +153,78 @@ export class SchedulingController {
             )
 
             return mappedSchedules
+        } catch (error) {
+            return null
+        }
+    }
+
+    @Get("findSchedules")
+    async findSchedules(
+        @Headers("authorization") authorizationHeader: string,
+        @Query("startDate") startDate: string,
+        @Query("endDate") endDate: string
+    ): Promise<Schedule[]> {
+        try {
+            if (!authorizationHeader) {
+                throw new Error("Token JWT ausente")
+            }
+
+            const token = authorizationHeader.split(" ")[1]
+            const decodedToken = jwt.decode(token) as JwtPayload
+
+            if (!decodedToken || !decodedToken.id) {
+                throw new Error("Token JWT inválido")
+            }
+
+            const entrepreneurId = decodedToken.id
+
+            const schedules = await this.schedulingService.findByUserId(
+                entrepreneurId
+            )
+
+            let filteredSchedules = schedules
+
+            if (startDate && endDate) {
+                const parsedStartDate = new Date(startDate)
+                const parsedEndDate = new Date(endDate)
+
+                filteredSchedules = schedules.filter((schedule) => {
+                    const scheduledDate = new Date(schedule.scheduledDate)
+                    return (
+                        scheduledDate >= parsedStartDate &&
+                        scheduledDate <= parsedEndDate
+                    )
+                })
+            }
+
+            const mapSchedules: Schedule[] = filteredSchedules.map(
+                (scheduleResponse) => {
+                    const schedule = new Schedule()
+
+                    schedule.id = scheduleResponse.id
+                    schedule.scheduledDate = scheduleResponse.scheduledDate
+
+                    const user = new User()
+                    user.userId = scheduleResponse.user.userId
+                    schedule.user = user
+
+                    const entrepreneur = new Entrepreneur()
+                    entrepreneur.entrepreneurId =
+                        scheduleResponse.entrepreneur.entrepreneurId
+                    schedule.entrepreneur = entrepreneur
+
+                    const modality = new Modality()
+                    modality.id = scheduleResponse.modality.id
+                    modality.title = scheduleResponse.modality.title
+                    modality.duration = scheduleResponse.modality.duration
+                    modality.price = scheduleResponse.modality.price
+                    schedule.modality = modality
+
+                    return schedule
+                }
+            )
+
+            return mapSchedules
         } catch (error) {
             return null
         }
