@@ -1,5 +1,12 @@
-// scheduling.controller.ts
-import { Controller, Post, Body, Get, Headers, Query } from "@nestjs/common"
+import {
+    Controller,
+    Post,
+    Body,
+    Get,
+    Headers,
+    Query,
+    NotFoundException
+} from "@nestjs/common"
 import { SchedulingService } from "./scheduling.service"
 import { Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
@@ -42,8 +49,8 @@ export class SchedulingController {
 
             const result = await this.schedulingService.scheduleService(
                 userId,
-                body.entrepreneurId,
                 body.modalityId,
+                body.entrepreneurId,
                 body.scheduledDate
             )
 
@@ -57,105 +64,111 @@ export class SchedulingController {
     async findByUserId(
         @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule[]> {
-        try {
-            if (!authorizationHeader) {
-                throw new Error("Token JWT ausente")
-            }
-
-            const token = authorizationHeader.split(" ")[1]
-            const decodedToken = jwt.decode(token) as JwtPayload
-
-            if (!decodedToken || !decodedToken.id) {
-                throw new Error("Token JWT inválido")
-            }
-
-            const schedules = await this.schedulingService.findByUserId(
-                decodedToken.id
-            )
-            const mappedSchedules: Schedule[] = schedules.map(
-                (scheduleResponse) => {
-                    const schedule = new Schedule()
-
-                    schedule.id = scheduleResponse.id
-                    schedule.scheduledDate = scheduleResponse.scheduledDate
-
-                    const user = new User()
-                    user.userId = scheduleResponse.user.userId
-                    schedule.user = user
-
-                    const entrepreneur = new Entrepreneur()
-                    entrepreneur.entrepreneurId =
-                        scheduleResponse.entrepreneur.entrepreneurId
-                    schedule.entrepreneur = entrepreneur
-
-                    const modality = new Modality()
-                    modality.id = scheduleResponse.modality.id
-                    modality.title = scheduleResponse.modality.title
-                    modality.duration = scheduleResponse.modality.duration
-                    modality.price = scheduleResponse.modality.price
-                    schedule.modality = modality
-
-                    return schedule
-                }
-            )
-
-            return mappedSchedules
-        } catch (error) {
-            return null
+        if (!authorizationHeader) {
+            throw new NotFoundException("Token JWT ausente")
         }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken || !decodedToken.id) {
+            throw new NotFoundException("Token JWT inválido")
+        }
+
+        const schedules = await this.schedulingService.findByUserId(
+            decodedToken.id
+        )
+
+        if (!schedules || schedules.length === 0) {
+            throw new NotFoundException("Nenhum agendamento encontrado")
+        }
+
+        const mappedSchedules: Schedule[] = schedules.map(
+            (scheduleResponse) => {
+                const schedule = new Schedule()
+                schedule.id = scheduleResponse.id
+                schedule.scheduledDate = scheduleResponse.scheduledDate
+
+                const user = new User()
+                user.userId = scheduleResponse.user.userId
+                user.name = scheduleResponse.user.name
+                schedule.user = user
+
+                const entrepreneur = new Entrepreneur()
+                entrepreneur.entrepreneurId =
+                    scheduleResponse.entrepreneur.entrepreneurId
+                entrepreneur.name = scheduleResponse.entrepreneur.name
+                entrepreneur.companyName =
+                    scheduleResponse.entrepreneur.companyName
+                schedule.entrepreneur = entrepreneur
+
+                const modality = new Modality()
+                modality.modalityId = scheduleResponse.modality.modalityId
+                modality.title = scheduleResponse.modality.title
+                modality.duration = scheduleResponse.modality.duration
+                modality.price = scheduleResponse.modality.price
+                schedule.modality = modality
+
+                return schedule
+            }
+        )
+
+        return mappedSchedules
     }
 
     @Get("findByEntrepreneurId")
     async findByEntrepreneurId(
         @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule[]> {
-        try {
-            if (!authorizationHeader) {
-                throw new Error("Token JWT ausente")
-            }
-
-            const token = authorizationHeader.split(" ")[1]
-            const decodedToken = jwt.decode(token) as JwtPayload
-
-            if (!decodedToken || !decodedToken.id) {
-                throw new Error("Token JWT inválido")
-            }
-
-            const entrepreneurId = decodedToken.id
-            const schedules = await this.schedulingService.findByUserId(
-                entrepreneurId
-            )
-            const mappedSchedules: Schedule[] = schedules.map(
-                (scheduleResponse) => {
-                    const schedule = new Schedule()
-
-                    schedule.id = scheduleResponse.id
-                    schedule.scheduledDate = scheduleResponse.scheduledDate
-
-                    const user = new User()
-                    user.userId = scheduleResponse.user.userId
-                    schedule.user = user
-
-                    const entrepreneur = new Entrepreneur()
-                    entrepreneur.entrepreneurId =
-                        scheduleResponse.entrepreneur.entrepreneurId
-                    schedule.entrepreneur = entrepreneur
-
-                    const modality = new Modality()
-                    modality.id = scheduleResponse.modality.id
-                    modality.title = scheduleResponse.modality.title
-                    modality.duration = scheduleResponse.modality.duration
-                    modality.price = scheduleResponse.modality.price
-                    schedule.modality = modality
-
-                    return schedule
-                }
-            )
-
-            return mappedSchedules
-        } catch (error) {
-            return null
+        if (!authorizationHeader) {
+            throw new NotFoundException("Token JWT ausente")
         }
+
+        const token = authorizationHeader.split(" ")[1]
+
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken || !decodedToken.id) {
+            throw new NotFoundException("Token JWT inválido")
+        }
+
+        const schedules = await this.schedulingService.findByEntrepreneurId(
+            decodedToken.id
+        )
+
+        if (!schedules || schedules.length === 0) {
+            throw new NotFoundException("Nenhum agendamento encontrado")
+        }
+
+        const mappedSchedules: Schedule[] = schedules.map(
+            (scheduleResponse) => {
+                const schedule = new Schedule()
+
+                const entrepreneur = new Entrepreneur()
+                entrepreneur.entrepreneurId =
+                    scheduleResponse.entrepreneur.entrepreneurId
+                schedule.entrepreneur = entrepreneur
+
+                schedule.id = scheduleResponse.id
+                schedule.scheduledDate = scheduleResponse.scheduledDate
+
+                const user = new User()
+                user.userId = scheduleResponse.user.userId
+                user.name = scheduleResponse.user.name
+                schedule.user = user
+
+                const modality = new Modality()
+                modality.modalityId = scheduleResponse.modality.modalityId
+                modality.title = scheduleResponse.modality.title
+                modality.duration = scheduleResponse.modality.duration
+                modality.price = scheduleResponse.modality.price
+                schedule.modality = modality
+
+                return schedule
+            }
+        )
+
+        return mappedSchedules
     }
 
     @Get("findSchedules")
@@ -178,7 +191,7 @@ export class SchedulingController {
 
             const entrepreneurId = decodedToken.id
 
-            const schedules = await this.schedulingService.findByUserId(
+            const schedules = await this.schedulingService.findByEntrepreneurId(
                 entrepreneurId
             )
 
@@ -214,7 +227,7 @@ export class SchedulingController {
                     schedule.entrepreneur = entrepreneur
 
                     const modality = new Modality()
-                    modality.id = scheduleResponse.modality.id
+                    modality.modalityId = scheduleResponse.modality.modalityId
                     modality.title = scheduleResponse.modality.title
                     modality.duration = scheduleResponse.modality.duration
                     modality.price = scheduleResponse.modality.price

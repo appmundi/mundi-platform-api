@@ -94,18 +94,29 @@ export class EntrepreneurController {
         }
     ) {
         try {
-            const { name, entrepreneurId, userFound, passwordMatched } =
+            if (
+                !req ||
+                !req.email ||
+                !req.password ||
+                req.isEntrepreneur === undefined
+            ) {
+                throw new UnauthorizedException(
+                    "Dados de autenticação inválidos."
+                )
+            }
+
+            const { email, name, entrepreneurId, password } =
                 await this.authService.validateUser(
                     req.email,
                     req.password,
                     req.isEntrepreneur
                 )
 
-            if (!userFound) {
-                throw new UnauthorizedException("Email não encontrado.")
+            if (!email) {
+                throw new UnauthorizedException("E-mail incorreto.")
             }
 
-            if (!passwordMatched) {
+            if (!password) {
                 throw new UnauthorizedException("Senha incorreta.")
             }
 

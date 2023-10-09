@@ -45,7 +45,7 @@ export class SchedulingService {
         })
 
         const modality = await this.modalityRepository.findOne({
-            where: { id: modalityId }
+            where: { modalityId }
         })
 
         if (!user || !entrepreneur) {
@@ -70,6 +70,7 @@ export class SchedulingService {
 
         return "Agendamento criado com sucesso."
     }
+
     async deleteSchedule(id: number): Promise<string> {
         const schedule = await this.scheduleRepository.findOne({
             where: { id }
@@ -83,6 +84,7 @@ export class SchedulingService {
 
         return "Agendamento excluído com sucesso."
     }
+
     async findAllSchedules(): Promise<Schedule[]> {
         return await this.scheduleRepository.find()
     }
@@ -96,6 +98,7 @@ export class SchedulingService {
 
     async findByEntrepreneurId(entrepreneurId: number): Promise<Schedule[]> {
         return await this.scheduleRepository.find({
+            relations: ["entrepreneur", "user", "modality"],
             where: { entrepreneur: { entrepreneurId } }
         })
     }

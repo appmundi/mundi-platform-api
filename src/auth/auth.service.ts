@@ -12,7 +12,7 @@ export class AuthService {
         private userService: UserService,
         private entrepreneurService: EntrepreneurService,
         private jwtService: JwtService
-    ) { }
+    ) {}
 
     private async validateUserOrEntrepreneur(
         emailOrCpf: string,
@@ -29,14 +29,21 @@ export class AuthService {
             : await service.findOneByCpf(emailOrCpf)
 
         if (user && (await bcrypt.compare(password, user.password))) {
-
             return user
         }
         return null
     }
 
-    async validateUser(emailOrCpf: string, password: string, isEntrepreneur: boolean): Promise<any> {
-        return this.validateUserOrEntrepreneur(emailOrCpf, password, isEntrepreneur)
+    async validateUser(
+        emailOrCpf: string,
+        password: string,
+        isEntrepreneur: boolean
+    ): Promise<any> {
+        return this.validateUserOrEntrepreneur(
+            emailOrCpf,
+            password,
+            isEntrepreneur
+        )
     }
 
     async validateEntrepreneur(
@@ -44,7 +51,11 @@ export class AuthService {
         password: string,
         isEntrepreneur: boolean
     ): Promise<any> {
-        return this.validateUserOrEntrepreneur(emailOrCpf, password, isEntrepreneur)
+        return this.validateUserOrEntrepreneur(
+            emailOrCpf,
+            password,
+            isEntrepreneur
+        )
     }
 
     async login(userId: string, username: string) {

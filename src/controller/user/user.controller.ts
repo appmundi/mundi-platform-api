@@ -31,7 +31,7 @@ export class UserController {
         private authService: AuthService
     ) {}
 
-    @UseGuards(AuthGuard("local"))
+    @UseGuards(JwtAuthGuard)
     @Get("searchAll")
     async findAll(): Promise<ReturnUserDto[]> {
         return this.userService.findAll()
@@ -70,32 +70,30 @@ export class UserController {
             isEntrepreneur: boolean
         }
     ) {
-        try {
-            const { name, userId, userFound, passwordMatched } =
-                await this.authService.validateUser(
-                    req.email,
-                    req.password,
-                    req.isEntrepreneur
-                )
+        const { email, password, isEntrepreneur } = req
+        const user = await this.authService.validateUser(
+            email,
+            password,
+            isEntrepreneur
+        )
 
-            if (!userFound) {
-                throw new UnauthorizedException("Email não encontrado.")
-            }
-
-            if (!passwordMatched) {
-                throw new UnauthorizedException("Senha incorreta.")
-            }
-
-            if (!userId || !name) {
-                throw new UnauthorizedException(
-                    "Não foi possível autenticar o usuário."
-                )
-            }
-
-            return this.authService.login(userId, name)
-        } catch (e) {
-            throw new UnauthorizedException("Erro de autenticação.")
+        if (!email) {
+            throw new UnauthorizedException("Email não encontrado.")
         }
+
+        if (!password) {
+            throw new UnauthorizedException("Senha incorreta.")
+        }
+
+        if (!user) {
+            throw new UnauthorizedException(
+                "Não foi possível autenticar o usuário."
+            )
+        }
+
+        const { name, userId } = user
+
+        return this.authService.login(userId, name)
     }
 
     @UseGuards(JwtAuthGuard)

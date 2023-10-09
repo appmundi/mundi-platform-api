@@ -1,10 +1,10 @@
-import { Work } from "src/controller/work/entities/work.entity";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Work } from "src/controller/work/entities/work.entity"
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm"
 
 @Entity()
 export class Modality {
     @PrimaryGeneratedColumn()
-    id: number
+    modalityId: number
 
     @Column()
     title: string
