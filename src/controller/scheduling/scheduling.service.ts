@@ -1,4 +1,4 @@
-import { Injectable, Inject } from "@nestjs/common"
+import { Injectable, Inject, HttpException, HttpStatus } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
@@ -49,7 +49,13 @@ export class SchedulingService {
         })
 
         if (!user || !entrepreneur) {
-            throw new Error("Usuário ou prestador de serviços não encontrado.")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Usuário ou prestador de serviços não encontrado."
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const isAvailable = await this.isTimeSlotAvailable(
@@ -57,7 +63,13 @@ export class SchedulingService {
             scheduledDate
         )
         if (!isAvailable) {
-            throw new Error("Horário já agendado.")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Horário já agendado."
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const schedule = new Schedule()

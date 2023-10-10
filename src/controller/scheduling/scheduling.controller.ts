@@ -5,7 +5,9 @@ import {
     Get,
     Headers,
     Query,
-    NotFoundException
+    NotFoundException,
+    HttpException,
+    HttpStatus
 } from "@nestjs/common"
 import { SchedulingService } from "./scheduling.service"
 import { Schedule } from "./entities/scheduling.entity"
@@ -35,14 +37,26 @@ export class SchedulingController {
     ) {
         try {
             if (!authorizationHeader) {
-                throw new Error("Token JWT ausente")
+                throw new HttpException(
+                    {
+                        status: HttpStatus.BAD_REQUEST,
+                        error: "Token JWT ausente"
+                    },
+                    HttpStatus.BAD_REQUEST
+                )
             }
 
             const token = authorizationHeader.split(" ")[1]
             const decodedToken = jwt.decode(token) as JwtPayload
 
             if (!decodedToken || !decodedToken.id) {
-                throw new Error("Token JWT inválido")
+                throw new HttpException(
+                    {
+                        status: HttpStatus.BAD_REQUEST,
+                        error: "Token JWT inválido"
+                    },
+                    HttpStatus.BAD_REQUEST
+                )
             }
 
             const userId = decodedToken.id
@@ -65,14 +79,26 @@ export class SchedulingController {
         @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule[]> {
         if (!authorizationHeader) {
-            throw new NotFoundException("Token JWT ausente")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Token JWT ausente"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const token = authorizationHeader.split(" ")[1]
         const decodedToken = jwt.decode(token) as JwtPayload
 
         if (!decodedToken || !decodedToken.id) {
-            throw new NotFoundException("Token JWT inválido")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Token JWT inválido"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const schedules = await this.schedulingService.findByUserId(
@@ -80,7 +106,13 @@ export class SchedulingController {
         )
 
         if (!schedules || schedules.length === 0) {
-            throw new NotFoundException("Nenhum agendamento encontrado")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Nenhum agendamento encontrado"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const mappedSchedules: Schedule[] = schedules.map(
@@ -121,15 +153,26 @@ export class SchedulingController {
         @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule[]> {
         if (!authorizationHeader) {
-            throw new NotFoundException("Token JWT ausente")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Token JWT ausente"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
-
         const token = authorizationHeader.split(" ")[1]
 
         const decodedToken = jwt.decode(token) as JwtPayload
 
         if (!decodedToken || !decodedToken.id) {
-            throw new NotFoundException("Token JWT inválido")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Token JWT inválido"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const schedules = await this.schedulingService.findByEntrepreneurId(
@@ -137,7 +180,13 @@ export class SchedulingController {
         )
 
         if (!schedules || schedules.length === 0) {
-            throw new NotFoundException("Nenhum agendamento encontrado")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Nenhum agendamento encontrado"
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const mappedSchedules: Schedule[] = schedules.map(
@@ -179,14 +228,26 @@ export class SchedulingController {
     ): Promise<Schedule[]> {
         try {
             if (!authorizationHeader) {
-                throw new Error("Token JWT ausente")
+                throw new HttpException(
+                    {
+                        status: HttpStatus.BAD_REQUEST,
+                        error: "Token JWT inválido"
+                    },
+                    HttpStatus.BAD_REQUEST
+                )
             }
 
             const token = authorizationHeader.split(" ")[1]
             const decodedToken = jwt.decode(token) as JwtPayload
 
             if (!decodedToken || !decodedToken.id) {
-                throw new Error("Token JWT inválido")
+                throw new HttpException(
+                    {
+                        status: HttpStatus.BAD_REQUEST,
+                        error: "Token JWT inválido"
+                    },
+                    HttpStatus.BAD_REQUEST
+                )
             }
 
             const entrepreneurId = decodedToken.id
