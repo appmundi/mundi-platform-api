@@ -1,8 +1,8 @@
-import { Injectable, Inject } from "@nestjs/common"
+import { Injectable, Inject, HttpException, HttpStatus, NotFoundException } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
-import { Schedule } from "./entities/scheduling.entity"
+import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import { Modality } from "../modality/entities/modality.entity"
 
 @Injectable()
@@ -16,7 +16,7 @@ export class SchedulingService {
         private scheduleRepository: Repository<Schedule>,
         @Inject("MODALITY_REPOSITORY")
         private modalityRepository: Repository<Modality>
-    ) {}
+    ) { }
 
     async isTimeSlotAvailable(
         entrepreneurId: number,
@@ -32,6 +32,21 @@ export class SchedulingService {
         return !existingSchedule
     }
 
+    async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
+
+        console.log("Trying to find the Schedule")
+        const agenda = await this.scheduleRepository.findOne({ where: { id } });
+
+        if (!agenda) {
+            throw new NotFoundException(`Agenda with ID ${id} not found`);
+        }
+
+        agenda.status = newStatus;
+        console.log("Trying to update the Schedule")
+        return this.scheduleRepository.save(agenda);
+    }
+
+
     async scheduleService(
         userId: number,
         modalityId: number,
@@ -45,11 +60,17 @@ export class SchedulingService {
         })
 
         const modality = await this.modalityRepository.findOne({
-            where: { id: modalityId }
+            where: { modalityId }
         })
 
         if (!user || !entrepreneur) {
-            throw new Error("Usuário ou prestador de serviços não encontrado.")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Usuário ou prestador de serviços não encontrado."
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const isAvailable = await this.isTimeSlotAvailable(
@@ -57,7 +78,13 @@ export class SchedulingService {
             scheduledDate
         )
         if (!isAvailable) {
-            throw new Error("Horário já agendado.")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Horário já agendado."
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const schedule = new Schedule()
@@ -70,6 +97,7 @@ export class SchedulingService {
 
         return "Agendamento criado com sucesso."
     }
+
     async deleteSchedule(id: number): Promise<string> {
         const schedule = await this.scheduleRepository.findOne({
             where: { id }
@@ -83,6 +111,7 @@ export class SchedulingService {
 
         return "Agendamento excluído com sucesso."
     }
+
     async findAllSchedules(): Promise<Schedule[]> {
         return await this.scheduleRepository.find()
     }
@@ -96,6 +125,7 @@ export class SchedulingService {
 
     async findByEntrepreneurId(entrepreneurId: number): Promise<Schedule[]> {
         return await this.scheduleRepository.find({
+            relations: ["entrepreneur", "user", "modality"],
             where: { entrepreneur: { entrepreneurId } }
         })
     }

@@ -10,6 +10,13 @@ import { User } from "src/controller/user/entities/user.entity"
 import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
 import { Modality } from "src/controller/modality/entities/modality.entity"
 
+export enum AgendaStatus {
+    INIT = 'INIT',
+    STARTED = 'STARTED',
+    CANCELED = 'CANCELED',
+    FINISHED = 'FINISHED',
+  }
+
 @Entity()
 export class Schedule {
     @PrimaryGeneratedColumn()
@@ -29,5 +36,12 @@ export class Schedule {
     @OneToOne(() => Modality)
     @JoinColumn()
     modality: Modality
+
+    @Column({
+        type: 'enum',
+        enum: AgendaStatus,
+        default: AgendaStatus.INIT, // Valor padrão
+      })
+      status: AgendaStatus;
 
 }

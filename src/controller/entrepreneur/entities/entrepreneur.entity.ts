@@ -11,6 +11,7 @@ import { Work } from "src/controller/work/entities/work.entity"
 import { Image } from "src/controller/uploads/entities/upload.entity"
 import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
 import { Category } from "src/controller/category/entities/category.entity"
+import { Client } from "src/controller/registerClient/entities/client.entity"
 
 @Entity()
 export class Entrepreneur {
@@ -71,6 +72,9 @@ export class Entrepreneur {
 
     @OneToMany(() => Schedule, (schedulling) => schedulling.entrepreneur)
     schedulling: Schedule[]
+
+    @OneToMany(() => Client, (registerClient) => registerClient.entrepreneur)
+    client: Client[]
 
     @OneToMany(() => Avaliation, (evaluation) => evaluation.entrepreneur)
     avaliation: Avaliation[]

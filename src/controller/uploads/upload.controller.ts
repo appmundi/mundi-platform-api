@@ -1,6 +1,9 @@
 import {
     Body,
     Controller,
+    Delete,
+    Get,
+    Param,
     Post,
     UploadedFiles,
     UseInterceptors
@@ -30,5 +33,18 @@ export class ImagesController {
         }
 
         return { success: true, imagePaths }
+    }
+
+    @Get("byEntrepreneur/:entrepreneurId")
+    async getImagesByEntrepreneurId(
+        @Param("entrepreneurId") entrepreneurId: number
+    ) {
+        return this.imagesService.getImagesByEntrepreneurId(entrepreneurId)
+    }
+
+    @Delete("delete/:id")
+    async deleteImage(@Param("id") id: number) {
+        await this.imagesService.deleteImage(id)
+        return { success: true, message: "Imagem deletada com sucesso." }
     }
 }

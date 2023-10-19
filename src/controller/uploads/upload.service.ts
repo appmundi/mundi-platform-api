@@ -19,7 +19,10 @@ export class ImagesService {
         entrepreneurId: number
     ): Promise<{ path: string }> {
         const fileName = `${Date.now()}-${image.originalname}`
-        const uploadFolder = path.resolve(__dirname, "./images")
+        const uploadFolder = path.resolve(
+            __dirname,
+            "../../../src/controller/uploads/images"
+        )
 
         const filePath = path.join(uploadFolder, fileName)
 
@@ -35,5 +38,25 @@ export class ImagesService {
         await this.imageRepository.save(imageEntity)
 
         return { path: filePath }
+    }
+
+    async getImagesByEntrepreneurId(entrepreneurId: number): Promise<Image[]> {
+        return this.imageRepository.find({
+            where: { entrepreneur: { entrepreneurId: entrepreneurId } }
+        })
+    }
+
+    async deleteImage(id: number): Promise<void> {
+        const image = await this.imageRepository.findOne({
+            where: { id }
+        })
+
+        if (!image) {
+            throw new Error(`Imagem com ID ${id} não encontrada.`)
+        }
+
+        fs.unlinkSync(image.filename)
+
+        await this.imageRepository.remove(image)
     }
 }

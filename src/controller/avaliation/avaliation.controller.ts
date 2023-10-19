@@ -20,6 +20,7 @@ export class AvaliationController {
         @Body() evaluationData: { rating: number; comment: string, name: string }
     ) {
         try {
+            console.log("Trying to insert a avaliation")
             const avaliation = await this.avaliationService.createAvaliation(
                 entrepreneurId,
                 evaluationData.rating,
@@ -35,4 +36,5 @@ export class AvaliationController {
             throw new Error("Falha ao enviar avaliação")
         }
     }
+
 }

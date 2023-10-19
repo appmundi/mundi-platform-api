@@ -26,8 +26,10 @@ import { AuthService } from "src/auth/auth.service"
 
 @Controller("entrepreneur")
 export class EntrepreneurController {
-    constructor(private readonly entrepreneurService: EntrepreneurService, private authService: AuthService) { }
-
+    constructor(
+        private readonly entrepreneurService: EntrepreneurService,
+        private authService: AuthService
+    ) { }
 
     @UsePipes(ValidationPipe)
     @Post("register")
@@ -55,14 +57,16 @@ export class EntrepreneurController {
 
     @Get("searchAll")
     async findAll(): Promise<Entrepreneur[]> {
-        console.log('trying to retrive all Entrepreneurs')
+        console.log("trying to retrive all Entrepreneurs")
         return this.entrepreneurService.findAll()
     }
 
     @Get("search/:id")
-    async findOneEntrepreneur(@Param('id') entrepreneurId: number): Promise<Entrepreneur> {
-        console.log('trying to retrive Entrepreneur', entrepreneurId)
-        return this.entrepreneurService.findOneById(entrepreneurId);
+    async findOneEntrepreneur(
+        @Param("id") entrepreneurId: number
+    ): Promise<Entrepreneur> {
+        console.log("trying to retrive Entrepreneur", entrepreneurId)
+        return this.entrepreneurService.findOneById(entrepreneurId)
     }
 
     @UseGuards(JwtAuthGuard)
@@ -79,21 +83,49 @@ export class EntrepreneurController {
     async deleteUser(@Param("id") id: number): Promise<void> {
         return this.entrepreneurService.deleteUser(id)
     }
-
-
-    @Post("login")
-    async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
+     @Post("login")
+    async login(
+        @Body()
+        req: {
+            email: string
+            password: string
+            isEntrepreneur: boolean
+        }
+    ) {
         try {
-
-            const { name,  entrepreneurId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);
-
-            if (name && entrepreneurId) {
-                return this.authService.login(entrepreneurId, name)
-            } else {
-                throw new UnauthorizedException()
+            console.log(`Trying to validate user: ${req.email}`);
+            if (
+                !req ||
+                !req.email ||
+                !req.password ||
+                req.isEntrepreneur === undefined
+            ) {
+                throw new UnauthorizedException(
+                    "Dados de autenticação inválidos."
+                )
             }
+
+            console.log(`Trying to validate user: ${req.email}`);
+
+            const { email, name, entrepreneurId, password } =
+                await this.authService.validateUser(
+                    req.email,
+                    req.password,
+                    req.isEntrepreneur
+                )
+
+            if (!email) {
+                throw new UnauthorizedException("E-mail incorreto.")
+            }
+
+            if (!password) {
+                throw new UnauthorizedException("Senha incorreta.")
+            }
+
+            return await this.authService.login(entrepreneurId, name)
         } catch (e) {
-            throw new UnauthorizedException()
+            console.log(e);
+            throw new UnauthorizedException("Erro de autenticação.")
         }
     }
 }

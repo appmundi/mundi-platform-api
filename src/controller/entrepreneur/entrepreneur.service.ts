@@ -141,7 +141,6 @@ export class EntrepreneurService {
                 return <ResultDto>{
                     status: true,
                     mensagem: "Cadastro feito com sucesso!",
-                    access_token: await this.jwtService.sign(payload),
                     entrepreneurId: result.entrepreneurId
                 }
             })

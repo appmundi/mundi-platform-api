@@ -4,7 +4,6 @@ import {
     Body,
     Get,
     UseGuards,
-    Request,
     ValidationPipe,
     UsePipes,
     HttpException,
@@ -30,9 +29,9 @@ export class UserController {
     constructor(
         private readonly userService: UserService,
         private authService: AuthService
-    ) { }
+    ) {}
 
-    @UseGuards(AuthGuard("local"))
+    @UseGuards(JwtAuthGuard)
     @Get("searchAll")
     async findAll(): Promise<ReturnUserDto[]> {
         return this.userService.findAll()
@@ -63,19 +62,39 @@ export class UserController {
     }
 
     @Post("login")
-    async login(@Body() req: { email: string, password: string, isEntrepreneur: boolean }) {
-        try {
-
-            const { name, userId } = await this.authService.validateUser(req.email, req.password, req.isEntrepreneur);
-
-            if (name && userId ) {
-                return this.authService.login(userId, name)
-            } else {
-                throw new UnauthorizedException()
-            }
-        } catch (e) {
-            throw new UnauthorizedException()
+    async login(
+        @Body()
+        req: {
+            email: string
+            password: string
+            isEntrepreneur: boolean
         }
+    ) {
+        console.log(`Trying to validate user: ${req.email}`);
+        const { email, password, isEntrepreneur } = req
+        const user = await this.authService.validateUser(
+            email,
+            password,
+            isEntrepreneur
+        )
+
+        if (!email) {
+            throw new UnauthorizedException("Email não encontrado.")
+        }
+
+        if (!password) {
+            throw new UnauthorizedException("Senha incorreta.")
+        }
+
+        if (!user) {
+            throw new UnauthorizedException(
+                "Não foi possível autenticar o usuário."
+            )
+        }
+
+        const { name, userId } = user
+
+        return this.authService.login(userId, name)
     }
 
     @UseGuards(JwtAuthGuard)
