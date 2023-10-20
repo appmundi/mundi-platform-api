@@ -49,7 +49,7 @@ export class SchedulingService {
 
     async scheduleService(
         userId: number,
-        modalityId: number,
+        id: number,
         entrepreneurId: number,
         scheduledDate: Date
     ) {
@@ -60,7 +60,7 @@ export class SchedulingService {
         })
 
         const modality = await this.modalityRepository.findOne({
-            where: { modalityId }
+            where: { id }
         })
 
         if (!user || !entrepreneur) {

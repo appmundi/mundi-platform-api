@@ -138,7 +138,7 @@ export class SchedulingController {
                 schedule.entrepreneur = entrepreneur
 
                 const modality = new Modality()
-                modality.modalityId = scheduleResponse.modality.modalityId
+                modality.id = scheduleResponse.modality.id
                 modality.title = scheduleResponse.modality.title
                 modality.duration = scheduleResponse.modality.duration
                 modality.price = scheduleResponse.modality.price
@@ -224,7 +224,7 @@ export class SchedulingController {
                 schedule.user = user
 
                 const modality = new Modality()
-                modality.modalityId = scheduleResponse.modality.modalityId
+                modality.id = scheduleResponse.modality.id
                 modality.title = scheduleResponse.modality.title
                 modality.duration = scheduleResponse.modality.duration
                 modality.price = scheduleResponse.modality.price
@@ -305,7 +305,7 @@ export class SchedulingController {
                     schedule.entrepreneur = entrepreneur
 
                     const modality = new Modality()
-                    modality.modalityId = scheduleResponse.modality.modalityId
+                    modality.id = scheduleResponse.modality.id
                     modality.title = scheduleResponse.modality.title
                     modality.duration = scheduleResponse.modality.duration
                     modality.price = scheduleResponse.modality.price

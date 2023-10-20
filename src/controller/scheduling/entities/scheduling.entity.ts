@@ -35,7 +35,7 @@ export class Schedule {
     @Column({ type: "timestamp" })
     scheduledDate: Date
 
-    @ManyToOne(() => Modality, (modality) => modality.modalityId)
+    @ManyToOne(() => Modality, (modality) => modality.id)
     @JoinColumn()
     modality: Modality
 
