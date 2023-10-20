@@ -70,6 +70,7 @@ export class UserController {
             isEntrepreneur: boolean
         }
     ) {
+        console.log(`Trying to validate user: ${req.email}`);
         const { email, password, isEntrepreneur } = req
         const user = await this.authService.validateUser(
             email,

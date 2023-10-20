@@ -29,7 +29,7 @@ export class EntrepreneurController {
     constructor(
         private readonly entrepreneurService: EntrepreneurService,
         private authService: AuthService
-    ) {}
+    ) { }
 
     @UsePipes(ValidationPipe)
     @Post("register")
@@ -83,8 +83,7 @@ export class EntrepreneurController {
     async deleteUser(@Param("id") id: number): Promise<void> {
         return this.entrepreneurService.deleteUser(id)
     }
-
-    @Post("login")
+     @Post("login")
     async login(
         @Body()
         req: {
@@ -94,6 +93,7 @@ export class EntrepreneurController {
         }
     ) {
         try {
+            console.log(`Trying to validate user: ${req.email}`);
             if (
                 !req ||
                 !req.email ||
@@ -104,6 +104,8 @@ export class EntrepreneurController {
                     "Dados de autenticação inválidos."
                 )
             }
+
+            console.log(`Trying to validate user: ${req.email}`);
 
             const { email, name, entrepreneurId, password } =
                 await this.authService.validateUser(
@@ -120,8 +122,9 @@ export class EntrepreneurController {
                 throw new UnauthorizedException("Senha incorreta.")
             }
 
-            return this.authService.login(entrepreneurId, name)
+            return await this.authService.login(entrepreneurId, name)
         } catch (e) {
+            console.log(e);
             throw new UnauthorizedException("Erro de autenticação.")
         }
     }

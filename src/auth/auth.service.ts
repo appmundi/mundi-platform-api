@@ -12,7 +12,7 @@ export class AuthService {
         private userService: UserService,
         private entrepreneurService: EntrepreneurService,
         private jwtService: JwtService
-    ) {}
+    ) { }
 
     private async validateUserOrEntrepreneur(
         emailOrCpf: string,
@@ -27,6 +27,8 @@ export class AuthService {
         const user = isEmail
             ? await service.findOneByEmail(emailOrCpf)
             : await service.findOneByCpf(emailOrCpf)
+
+
 
         if (user && (await bcrypt.compare(password, user.password))) {
             return user
@@ -60,10 +62,11 @@ export class AuthService {
 
     async login(userId: string, username: string) {
         const payload = { id: userId, username: username }
+        console.log("Payload", payload)
         return {
             status: true,
             message: "Login efetuado com sucesso",
-            access_token: await this.jwtService.sign(payload)
+            access_token: this.jwtService.sign(payload)
         }
     }
 }
