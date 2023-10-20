@@ -1,5 +1,12 @@
+import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
 import { Work } from "src/controller/work/entities/work.entity"
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm"
+import {
+    Column,
+    Entity,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn
+} from "typeorm"
 
 @Entity()
 export class Modality {
@@ -14,6 +21,9 @@ export class Modality {
 
     @Column()
     price: number
+
+    @OneToMany(() => Schedule, (schedulling) => schedulling.modality)
+    schedulling: Schedule[]
 
     @ManyToOne(() => Work, (work) => work.id)
     work: Work
