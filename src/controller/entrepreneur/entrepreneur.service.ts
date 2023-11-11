@@ -205,6 +205,7 @@ export class EntrepreneurService {
             .createQueryBuilder()
             .select(`getEntrepreneurData(${entrepreneurId})`, "entrepreneur")
             .getRawOne()
+
         return entrepreneur.entrepreneur
     }
 
