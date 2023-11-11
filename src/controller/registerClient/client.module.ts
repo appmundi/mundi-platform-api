@@ -24,4 +24,4 @@ import { ClientController } from "./client.controller"
         ...EntrepreneurProviders
     ]
 })
-export class UploadModule {}
+export class registerClientModule {}
