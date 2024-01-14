@@ -12,8 +12,8 @@ export class Client {
     @Column()
     phone: string
 
-    @Column()
-    date: string
+    @Column({ type: "timestamp" })
+    date: Date
 
     @ManyToOne(() => Entrepreneur, (entrepreneur) => entrepreneur.client)
     entrepreneur: Entrepreneur

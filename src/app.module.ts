@@ -11,6 +11,7 @@ import { WorkModule } from "./controller/work/work.module"
 import { UploadModule } from "./controller/uploads/upload.module"
 import { ModalityModule } from "./controller/modality/modality.module"
 import { CategoryModule } from "./controller/category/category.module"
+import { ClientModule } from "./controller/registerClient/client.module"
 
 require("dotenv").config()
 
@@ -25,7 +26,8 @@ require("dotenv").config()
         SchedulingModule,
         UploadModule,
         ModalityModule,
-        CategoryModule
+        CategoryModule,
+        ClientModule
     ],
     controllers: [AppController],
     providers: [AppService]
