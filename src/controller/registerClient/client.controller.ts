@@ -18,27 +18,43 @@ export class ClientController {
         private readonly entrepreneurService: EntrepreneurService
     ) {}
 
-    @Post()
-    async createClient(@Body() clientData: CreateClientDto): Promise<Client> {
-        const entrepreneurId = clientData.entrepreneur
+    @Post(":id/scheduli")
+    async createClient(
+        @Param("id") entrepreneurId: number,
+        @Body() clientData: { name: string; phone: string; date?: Date }
+    ) {
+        try {
+            const scheduledDate = clientData.date || new Date()
 
-        const entrepreneur = await this.entrepreneurService.findOneById(
-            entrepreneurId
-        )
+            const clientService = await this.clientService.createClient(
+                entrepreneurId,
+                clientData.name,
+                clientData.phone,
+                scheduledDate
+            )
 
-        if (!entrepreneur) {
-            throw new NotFoundException(
-                `Empresário com ID ${entrepreneurId} não encontrado.`
+            return { message: "Serviço criado com sucesso", clientService }
+        } catch (error) {
+            console.error("Erro ao criar cliente:", error)
+            if (error instanceof NotFoundException) {
+                throw new NotFoundException(error.message)
+            }
+            throw new Error(
+                `Falha ao enviar avaliação. Detalhes: ${error.message}`
             )
         }
-
-        return this.clientService.createClient({ ...clientData, entrepreneur })
     }
+    @Get(":id/clients")
+    async findClientsByEntrepreneurId(@Param("id") entrepreneurId: number) {
+        try {
+            const clients =
+                await this.clientService.findClientsByEntrepreneurId(
+                    entrepreneurId
+                )
 
-    @Get(":entrepreneurId")
-    async findClientsByEntrepreneurId(
-        @Param("entrepreneurId") entrepreneurId: number
-    ): Promise<Client[]> {
-        return this.clientService.findClientsByEntrepreneurId(entrepreneurId)
+            return { clients }
+        } catch (error) {
+            throw new Error("Falha ao buscar clientes por empreendedor")
+        }
     }
 }

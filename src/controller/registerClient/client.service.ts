@@ -1,18 +1,40 @@
-import { Injectable, Inject } from "@nestjs/common"
+import { Injectable, Inject, NotFoundException } from "@nestjs/common"
 import { Repository } from "typeorm"
-import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
+
 import { Client } from "./entities/client.entity"
+import { EntrepreneurService } from "../entrepreneur/entrepreneur.service"
 
 @Injectable()
 export class ClientService {
     constructor(
         @Inject("CLIENT_REPOSITORY")
-        private clientRepository: Repository<Client>
+        private clientRepository: Repository<Client>,
+        private entrepreneurService: EntrepreneurService
     ) {}
 
-    async createClient(clientData: Partial<Client>): Promise<Client> {
-        const client = this.clientRepository.create(clientData)
-        return await this.clientRepository.save(client)
+    async createClient(
+        freelancerId: number,
+        name: string,
+        phone: string,
+        date: Date
+    ): Promise<Client> {
+        const entrepreneur = await this.entrepreneurService.getUserById(
+            freelancerId
+        )
+
+        if (!entrepreneur) {
+            throw new NotFoundException(
+                `Entrepreneur ID ${freelancerId} não encontrado`
+            )
+        }
+
+        const client = new Client()
+        client.name = name
+        client.phone = phone
+        client.date = date
+        client.entrepreneur = entrepreneur
+
+        return this.clientRepository.save(client)
     }
 
     async findClientsByEntrepreneurId(

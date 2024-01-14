@@ -10,7 +10,7 @@ export class CreateClientDto {
     phone: string
 
     @IsNotEmpty({ message: 'O campo "date" não pode estar vazio' })
-    @IsDate({ message: 'O campo "date" deve ser uma data válida' })
+    @IsString()
     date: string
 
     @IsInt()
