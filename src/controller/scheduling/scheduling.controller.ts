@@ -7,14 +7,17 @@ import {
     Query,
     NotFoundException,
     HttpException,
-    HttpStatus
+    HttpStatus,
+    Put,
+    Param
 } from "@nestjs/common"
 import { SchedulingService } from "./scheduling.service"
-import { Schedule } from "./entities/scheduling.entity"
+import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { Modality } from "../modality/entities/modality.entity"
+import { IDefaultResponse } from "src/interfaces"
 
 interface JwtPayload {
     id: number
@@ -23,7 +26,7 @@ interface JwtPayload {
 
 @Controller("scheduling")
 export class SchedulingController {
-    constructor(private readonly schedulingService: SchedulingService) {}
+    constructor(private readonly schedulingService: SchedulingService) { }
 
     @Post("schedule")
     async scheduleService(
@@ -135,7 +138,7 @@ export class SchedulingController {
                 schedule.entrepreneur = entrepreneur
 
                 const modality = new Modality()
-                modality.modalityId = scheduleResponse.modality.modalityId
+                modality.id = scheduleResponse.modality.id
                 modality.title = scheduleResponse.modality.title
                 modality.duration = scheduleResponse.modality.duration
                 modality.price = scheduleResponse.modality.price
@@ -148,10 +151,23 @@ export class SchedulingController {
         return mappedSchedules
     }
 
+    @Put(':id/update-status')
+    async updateStatus(
+        @Param('id') id: number,
+        @Body('status') newStatus: AgendaStatus,
+    ): Promise<Schedule> {
+        if (
+            ![AgendaStatus.INIT, AgendaStatus.STARTED, AgendaStatus.CANCELED, AgendaStatus.FINISHED].includes(newStatus)
+        ) {
+            throw new NotFoundException(`Invalid status: ${newStatus}`);
+        }
+        return this.schedulingService.updateStatus(id, newStatus);
+    }
+
     @Get("findByEntrepreneurId")
     async findByEntrepreneurId(
         @Headers("authorization") authorizationHeader: string
-    ): Promise<Schedule[]> {
+    ): Promise<IDefaultResponse> {
         if (!authorizationHeader) {
             throw new HttpException(
                 {
@@ -174,7 +190,7 @@ export class SchedulingController {
                 HttpStatus.BAD_REQUEST
             )
         }
-
+        console.log("Trying to retrieve the Schedule")
         const schedules = await this.schedulingService.findByEntrepreneurId(
             decodedToken.id
         )
@@ -200,6 +216,7 @@ export class SchedulingController {
 
                 schedule.id = scheduleResponse.id
                 schedule.scheduledDate = scheduleResponse.scheduledDate
+                schedule.status = scheduleResponse.status
 
                 const user = new User()
                 user.userId = scheduleResponse.user.userId
@@ -207,7 +224,7 @@ export class SchedulingController {
                 schedule.user = user
 
                 const modality = new Modality()
-                modality.modalityId = scheduleResponse.modality.modalityId
+                modality.id = scheduleResponse.modality.id
                 modality.title = scheduleResponse.modality.title
                 modality.duration = scheduleResponse.modality.duration
                 modality.price = scheduleResponse.modality.price
@@ -217,7 +234,7 @@ export class SchedulingController {
             }
         )
 
-        return mappedSchedules
+        return { message: "Sucesso", data: mappedSchedules }
     }
 
     @Get("findSchedules")
@@ -288,7 +305,7 @@ export class SchedulingController {
                     schedule.entrepreneur = entrepreneur
 
                     const modality = new Modality()
-                    modality.modalityId = scheduleResponse.modality.modalityId
+                    modality.id = scheduleResponse.modality.id
                     modality.title = scheduleResponse.modality.title
                     modality.duration = scheduleResponse.modality.duration
                     modality.price = scheduleResponse.modality.price

@@ -24,4 +24,4 @@ import { ClientController } from "./client.controller"
         ...EntrepreneurProviders
     ]
 })
-export class ClientModule {}
+export class registerClientModule {}

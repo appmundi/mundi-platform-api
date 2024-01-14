@@ -11,7 +11,7 @@ import {
 @Entity()
 export class Modality {
     @PrimaryGeneratedColumn()
-    modalityId: number
+    id: number
 
     @Column()
     title: string

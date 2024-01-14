@@ -1,8 +1,8 @@
-import { Injectable, Inject, HttpException, HttpStatus } from "@nestjs/common"
+import { Injectable, Inject, HttpException, HttpStatus, NotFoundException } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
-import { Schedule } from "./entities/scheduling.entity"
+import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import { Modality } from "../modality/entities/modality.entity"
 
 @Injectable()
@@ -16,7 +16,7 @@ export class SchedulingService {
         private scheduleRepository: Repository<Schedule>,
         @Inject("MODALITY_REPOSITORY")
         private modalityRepository: Repository<Modality>
-    ) {}
+    ) { }
 
     async isTimeSlotAvailable(
         entrepreneurId: number,
@@ -32,9 +32,24 @@ export class SchedulingService {
         return !existingSchedule
     }
 
+    async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
+
+        console.log("Trying to find the Schedule")
+        const agenda = await this.scheduleRepository.findOne({ where: { id } });
+
+        if (!agenda) {
+            throw new NotFoundException(`Agenda with ID ${id} not found`);
+        }
+
+        agenda.status = newStatus;
+        console.log("Trying to update the Schedule")
+        return this.scheduleRepository.save(agenda);
+    }
+
+
     async scheduleService(
         userId: number,
-        modalityId: number,
+        id: number,
         entrepreneurId: number,
         scheduledDate: Date
     ) {
@@ -45,7 +60,7 @@ export class SchedulingService {
         })
 
         const modality = await this.modalityRepository.findOne({
-            where: { modalityId }
+            where: { id }
         })
 
         if (!user || !entrepreneur) {
