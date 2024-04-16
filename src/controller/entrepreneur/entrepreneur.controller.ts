@@ -23,13 +23,16 @@ import { ValidatePhone } from "../helpers/validate.phone"
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
 import { AuthGuard } from "@nestjs/passport"
 import { AuthService } from "src/auth/auth.service"
+import { Schedule } from "../scheduling/entities/scheduling.entity"
+import { Work } from "../work/entities/work.entity"
+import { Category } from "../category/entities/category.entity"
 
 @Controller("entrepreneur")
 export class EntrepreneurController {
     constructor(
         private readonly entrepreneurService: EntrepreneurService,
         private authService: AuthService
-    ) { }
+    ) {}
 
     @UsePipes(ValidationPipe)
     @Post("register")
@@ -83,7 +86,7 @@ export class EntrepreneurController {
     async deleteUser(@Param("id") id: number): Promise<void> {
         return this.entrepreneurService.deleteUser(id)
     }
-     @Post("login")
+    @Post("login")
     async login(
         @Body()
         req: {
@@ -93,7 +96,7 @@ export class EntrepreneurController {
         }
     ) {
         try {
-            console.log(`Trying to validate user: ${req.email}`);
+            console.log(`Trying to validate user: ${req.email}`)
             if (
                 !req ||
                 !req.email ||
@@ -105,7 +108,7 @@ export class EntrepreneurController {
                 )
             }
 
-            console.log(`Trying to validate user: ${req.email}`);
+            console.log(`Trying to validate user: ${req.email}`)
 
             const { email, name, entrepreneurId, password } =
                 await this.authService.validateUser(
@@ -124,8 +127,35 @@ export class EntrepreneurController {
 
             return await this.authService.login(entrepreneurId, name)
         } catch (e) {
-            console.log(e);
+            console.log(e)
             throw new UnauthorizedException("Erro de autenticação.")
         }
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put(":id/update-schedule")
+    async updateSchedule(
+        @Param("id") id: number,
+        @Body() scheduleData: Partial<Schedule[]>
+    ): Promise<void> {
+        await this.entrepreneurService.updateSchedule(id, scheduleData)
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put(":id/update-work")
+    async updateWork(
+        @Param("id") id: number,
+        @Body() workData: Partial<Work[]>
+    ): Promise<void> {
+        await this.entrepreneurService.updateWork(id, workData)
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put(":id/update-category")
+    async updateCategory(
+        @Param("id") id: number,
+        @Body() categoryData: Partial<Category[]>
+    ): Promise<void> {
+        await this.entrepreneurService.updateCategory(id, categoryData)
     }
 }

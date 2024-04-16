@@ -22,7 +22,7 @@ export class WorkController {
         try {
             const work = await this.workService.createWork(
                 entrepreneurId,
-                workData.service,
+                workData.service
             )
 
             return { message: "Serviço criado com sucesso", work }
