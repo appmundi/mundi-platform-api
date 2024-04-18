@@ -26,7 +26,7 @@ interface JwtPayload {
 
 @Controller("scheduling")
 export class SchedulingController {
-    constructor(private readonly schedulingService: SchedulingService) { }
+    constructor(private readonly schedulingService: SchedulingService) {}
 
     @Post("schedule")
     async scheduleService(
@@ -151,17 +151,22 @@ export class SchedulingController {
         return mappedSchedules
     }
 
-    @Put(':id/update-status')
+    @Put(":id/update-status")
     async updateStatus(
-        @Param('id') id: number,
-        @Body('status') newStatus: AgendaStatus,
+        @Param("id") id: number,
+        @Body("status") newStatus: AgendaStatus
     ): Promise<Schedule> {
         if (
-            ![AgendaStatus.INIT, AgendaStatus.STARTED, AgendaStatus.CANCELED, AgendaStatus.FINISHED].includes(newStatus)
+            ![
+                AgendaStatus.INIT,
+                AgendaStatus.STARTED,
+                AgendaStatus.CANCELED,
+                AgendaStatus.FINISHED
+            ].includes(newStatus)
         ) {
-            throw new NotFoundException(`Invalid status: ${newStatus}`);
+            throw new NotFoundException(`Invalid status: ${newStatus}`)
         }
-        return this.schedulingService.updateStatus(id, newStatus);
+        return this.schedulingService.updateStatus(id, newStatus)
     }
 
     @Get("findByEntrepreneurId")

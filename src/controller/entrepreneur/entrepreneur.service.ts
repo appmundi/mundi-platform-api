@@ -1,10 +1,19 @@
-import { Injectable, Inject, HttpStatus, HttpException } from "@nestjs/common"
+import {
+    Injectable,
+    Inject,
+    HttpStatus,
+    HttpException,
+    NotFoundException
+} from "@nestjs/common"
 import { ResultDto } from "src/dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
 import { Repository } from "typeorm"
 import { JwtService } from "@nestjs/jwt"
 import * as bcrypt from "bcrypt"
+import { Work } from "../work/entities/work.entity"
+import { Category } from "../category/entities/category.entity"
+import { Schedule } from "../scheduling/entities/scheduling.entity"
 
 @Injectable()
 export class EntrepreneurService {
@@ -221,5 +230,59 @@ export class EntrepreneurService {
             )
         }
         await this.entrepreneurRepository.remove(entrepreneur)
+    }
+
+    async updateWork(id: number, workData: Partial<Work[]>): Promise<void> {
+        const entrepreneur = await this.entrepreneurRepository
+            .createQueryBuilder("entrepreneur")
+            .leftJoinAndSelect("entrepreneur.work", "work")
+            .where("entrepreneur.entrepreneurId = :id", { id })
+            .getOne()
+
+        if (!entrepreneur) {
+            throw new NotFoundException("Entrepreneur not found")
+        }
+
+        entrepreneur.work = [...workData] // Substitui todos os trabalhos antigos pelos novos
+
+        await this.entrepreneurRepository.save(entrepreneur)
+    }
+
+    async updateCategory(
+        id: number,
+        categoryData: Partial<Category[]>
+    ): Promise<void> {
+        const entrepreneur = await this.entrepreneurRepository
+            .createQueryBuilder("entrepreneur")
+            .leftJoinAndSelect("entrepreneur.category", "category")
+            .where("entrepreneur.entrepreneurId = :id", { id })
+            .getOne()
+
+        if (!entrepreneur) {
+            throw new NotFoundException("Entrepreneur not found")
+        }
+
+        entrepreneur.category = [...categoryData] // Substitui todas as categorias anteriores pelas novas
+
+        await this.entrepreneurRepository.save(entrepreneur)
+    }
+
+    async updateSchedule(
+        id: number,
+        scheduleData: Partial<Schedule[]>
+    ): Promise<void> {
+        const entrepreneur = await this.entrepreneurRepository
+            .createQueryBuilder("entrepreneur")
+            .leftJoinAndSelect("entrepreneur.schedulling", "schedulling")
+            .where("entrepreneur.entrepreneurId = :id", { id })
+            .getOne()
+
+        if (!entrepreneur) {
+            throw new NotFoundException("Entrepreneur not found")
+        }
+
+        entrepreneur.schedulling = [...scheduleData] // Substitui todos os agendamentos anteriores pelos novos
+
+        await this.entrepreneurRepository.save(entrepreneur)
     }
 }
