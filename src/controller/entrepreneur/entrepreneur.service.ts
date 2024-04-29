@@ -198,6 +198,7 @@ export class EntrepreneurService {
         entrepreneur.deslocation = updateUserDto.deslocation
         entrepreneur.valueDeslocation = updateUserDto.valueDeslocation
         entrepreneur.operation = updateUserDto.operation
+        entrepreneur.work = updateUserDto.work
         return this.entrepreneurRepository.save(entrepreneur)
     }
 
@@ -233,7 +234,8 @@ export class EntrepreneurService {
     }
 
     async updateWork(id: number, workData: Partial<Work[]>): Promise<void> {
-        const entrepreneur = await this.entrepreneurRepository
+        try{
+            const entrepreneur = await this.entrepreneurRepository
             .createQueryBuilder("entrepreneur")
             .leftJoinAndSelect("entrepreneur.work", "work")
             .where("entrepreneur.entrepreneurId = :id", { id })
@@ -243,9 +245,15 @@ export class EntrepreneurService {
             throw new NotFoundException("Entrepreneur not found")
         }
 
+        console.log("Work > ", workData)
+
+
         entrepreneur.work = [...workData] // Substitui todos os trabalhos antigos pelos novos
 
         await this.entrepreneurRepository.save(entrepreneur)
+        }catch(e){
+            console.log("Ero update > ", e)
+        }
     }
 
     async updateCategory(

@@ -1,7 +1,8 @@
-import { Controller, Post, Body, UseGuards, Param } from "@nestjs/common"
+import { Controller, Post, Body, UseGuards, Param, Put } from "@nestjs/common"
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
 import { ModalityService } from "./modality.service"
 import { HttpException, HttpStatus } from "@nestjs/common"
+import { Modality } from "./entities/modality.entity";
 
 @Controller("modality")
 export class ModalityController {
@@ -29,4 +30,22 @@ export class ModalityController {
             )
         }
     }
+
+    @UseGuards(JwtAuthGuard)
+    @Put("")
+    async updateWork(
+        @Body() modality: Modality
+    ) {
+        try {
+            const work = await this.modalityService.updateModality(
+                modality
+            )
+
+            return { message: "Serviço criado com sucesso", work }
+        } catch (error) {
+            
+           console.log( "e", error)
+        }
+    }
+
 }

@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException } from "@nestjs/common"
-import { Repository } from "typeorm"
+import { Repository, UpdateResult } from "typeorm"
 import { Modality } from "./entities/modality.entity"
 import { WorkService } from "../work/work.service"
 
@@ -30,5 +30,9 @@ export class ModalityService {
         try {
             return await this.modalityRepository.save(modality)
         } catch (e) {}
+    }
+
+    async updateModality(modality: Modality): Promise<UpdateResult> {
+        return await this.modalityRepository.update(modality.id, modality)
     }
 }

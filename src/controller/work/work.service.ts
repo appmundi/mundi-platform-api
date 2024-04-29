@@ -1,6 +1,6 @@
 import { Injectable, Inject, NotFoundException } from "@nestjs/common"
 import { Work } from "./entities/work.entity"
-import { Repository } from "typeorm"
+import { Repository, UpdateResult } from "typeorm"
 import { EntrepreneurService } from "../entrepreneur/entrepreneur.service"
 
 @Injectable()
@@ -39,5 +39,10 @@ export class WorkService {
     async findWorks(id: number): Promise<Work> {
         return await this.workRepository.findOne({ where: { id: id } })
     } 
+
+    async updateWork(work: Work): Promise<UpdateResult> {
+        console.log("Workando > ", work)
+        return await this.workRepository.update(work.id, work)
+    }
 
 }
