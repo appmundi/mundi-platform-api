@@ -15,7 +15,6 @@ import { Work } from "./entities/work.entity";
 export class WorkController {
     constructor(private readonly workService: WorkService) {}
 
-    @UseGuards(JwtAuthGuard)
     @Post(":id/work")
     async workFreelancer(
         @Param("id") entrepreneurId: number,
