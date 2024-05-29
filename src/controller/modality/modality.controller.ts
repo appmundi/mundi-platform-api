@@ -8,7 +8,6 @@ import { Modality } from "./entities/modality.entity";
 export class ModalityController {
     constructor(private readonly modalityService: ModalityService) {}
 
-    @UseGuards(JwtAuthGuard)
     @Post(":id/modality")
     async createModality(
         @Param("id") workId: number,
