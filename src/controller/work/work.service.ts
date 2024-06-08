@@ -2,7 +2,6 @@ import { Injectable, Inject, NotFoundException } from "@nestjs/common"
 import { Work } from "./entities/work.entity"
 import { Repository, UpdateResult } from "typeorm"
 import { EntrepreneurService } from "../entrepreneur/entrepreneur.service"
-
 @Injectable()
 export class WorkService {
     constructor(
@@ -14,6 +13,7 @@ export class WorkService {
     async createWork(
         freelancerId: number,
         service: string,
+    
     ): Promise<Work> {
         const entrepreneur = await this.entrepreneurService.getUserById(
             freelancerId
@@ -28,8 +28,10 @@ export class WorkService {
         const work = new Work()
         work.service = service
         work.entrepreneur = entrepreneur
+        
 
         return this.workRepository.save(work)
+        
     }
 
     async findWork(id: number): Promise<Work> {
@@ -37,7 +39,7 @@ export class WorkService {
     }
 
     async findWorks(id: number): Promise<Work> {
-        return await this.workRepository.findOne({ where: { id: id } })
+        return await this.workRepository.findOne({where: {id: id}})
     } 
 
     async updateWork(work: Work): Promise<UpdateResult> {

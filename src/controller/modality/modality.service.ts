@@ -21,15 +21,16 @@ export class ModalityService {
         try {
             var work = await this.workService.findWork(workId)
             modality.work = work
-        } catch (e) {}
+        
 
         modality.title = title
         modality.price = price
         modality.duration = duration
 
-        try {
             return await this.modalityRepository.save(modality)
-        } catch (e) {}
+        } catch (e) {
+            console.log("Modality > ", e);
+        }
     }
 
     async updateModality(modality: Modality): Promise<UpdateResult> {

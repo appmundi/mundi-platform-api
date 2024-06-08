@@ -147,6 +147,7 @@ export class EntrepreneurService {
         return await this.entrepreneurRepository
             .save(entrepreneur)
             .then(async (result) => {
+                
                 return <ResultDto>{
                     status: true,
                     mensagem: "Cadastro feito com sucesso!",

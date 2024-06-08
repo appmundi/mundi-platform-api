@@ -23,6 +23,7 @@ export class ModalityController {
 
             return { message: "Modality criada com sucesso" }
         } catch (error) {
+            console.log("Modality controller > ", error);
             throw new HttpException(
                 "Erro ao criar Modality",
                 HttpStatus.INTERNAL_SERVER_ERROR

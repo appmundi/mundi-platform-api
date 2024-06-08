@@ -5,15 +5,17 @@ import {
     UseGuards,
     Param,
     NotFoundException,
-    Put
+    Put,
+    Get
 } from "@nestjs/common"
 import { WorkService } from "./work.service"
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
 import { Work } from "./entities/work.entity";
+import { ModalityService } from "../modality/modality.service";
 
 @Controller("work")
 export class WorkController {
-    constructor(private readonly workService: WorkService) {}
+    constructor(private workService: WorkService, private modalityService: ModalityService) {}
 
     @Post(":id/work")
     async workFreelancer(
@@ -26,13 +28,36 @@ export class WorkController {
                 workData.service
             )
 
-            return { message: "Serviço criado com sucesso", work }
+
+            const findWork = await this.workService.findWork(
+                work.id
+            )
+
+           
+            const modality = await this.modalityService.createModality(
+                findWork.id,
+                workData.value,
+                1800,
+                workData.service
+            )
+           
+
+           return { message: "Serviço criado sem modality", work }
+
         } catch (error) {
             if (error instanceof NotFoundException) {
                 throw new NotFoundException(error.message)
             }
             throw new Error("Falha ao enviar avaliação")
         }
+    }
+    
+    @Get("search/:id")
+    async findOneEntrepreneur(
+        @Param("id") workId: number
+    ): Promise<Work> {
+        console.log("trying to retrive Work", workId)
+        return this.workService.findWork(workId)
     }
 
     @UseGuards(JwtAuthGuard)
