@@ -149,4 +149,8 @@ export class UserService {
     async findOneByCpf(doc: string): Promise<User | null> {
         return this.userRepository.findOne({ where: { doc } })
     }
+
+    async findOneByUserId(userId: number): Promise<User | undefined> {
+        return this.userRepository.findOne({ where: { userId } })
+    }
 }

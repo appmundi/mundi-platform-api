@@ -29,12 +29,21 @@ export class UserController {
     constructor(
         private readonly userService: UserService,
         private authService: AuthService
-    ) {}
+    ) { }
 
     @UseGuards(JwtAuthGuard)
     @Get("searchAll")
     async findAll(): Promise<ReturnUserDto[]> {
         return this.userService.findAll()
+    }
+
+    @Get("searchById:id")
+    async findOneByUserId(@Param("id") userId: number): Promise<User> {
+        try{
+            return this.userService.findOneByUserId(userId)
+        }catch(e){
+            console.log(e)
+        }
     }
 
     @UsePipes(ValidationPipe)
@@ -97,7 +106,6 @@ export class UserController {
         return this.authService.login(userId, name)
     }
 
-    @UseGuards(JwtAuthGuard)
     @Put(":id")
     async updateUser(
         @Param("id") id: number,
