@@ -14,6 +14,21 @@ export class CreateUserDto {
     @IsString()
     readonly doc: string
 
+    @IsString()
+    readonly address: string
+
+    @IsString()
+    readonly addressNumber: string
+
+    @IsString()
+    readonly cep: string
+
+    @IsString()
+    readonly city: string
+
+    @IsString()
+    readonly state: string
+
     /*@IsDate()
     readonly date: Date*/
 

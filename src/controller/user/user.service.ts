@@ -80,6 +80,11 @@ export class UserService {
         user.password = bcrypt.hashSync(data.password, 8)
         user.doc = data.doc
         user.phone = data.phone
+        user.address = data.address
+        user.addressNumber = data.addressNumber
+        user.cep = data.cep
+        user.city = data.city
+        user.state = data.state
         //user.date = data.date
         return this.userRepository
             .save(user)
@@ -125,6 +130,11 @@ export class UserService {
         user.password = updateUserDto.password
         user.doc = updateUserDto.doc
         user.phone = updateUserDto.phone
+        user.address = updateUserDto.address
+        user.addressNumber = updateUserDto.addressNumber
+        user.cep = updateUserDto.cep
+        user.city = updateUserDto.city
+        user.state = updateUserDto.state
         return this.userRepository.save(user)
     }
 

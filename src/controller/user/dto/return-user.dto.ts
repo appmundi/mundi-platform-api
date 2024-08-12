@@ -6,6 +6,11 @@ export class ReturnUserDto {
     email: string
     doc: string
     phone: string
+    address: string
+    addressNumber: string
+    cep: string
+    city: string
+    state: string
 
     constructor(userEntity: User) {
         this.userId = userEntity.userId
@@ -13,5 +18,10 @@ export class ReturnUserDto {
         this.email = userEntity.email
         this.doc = userEntity.doc
         this.phone = userEntity.phone
+        this.address = userEntity.address
+        this.addressNumber = userEntity.addressNumber
+        this.cep = userEntity.cep
+        this.city = userEntity.city
+        this.state = userEntity.state
     }
 }
