@@ -127,6 +127,11 @@ export class SchedulingController {
                 const user = new User()
                 user.userId = scheduleResponse.user.userId
                 user.name = scheduleResponse.user.name
+                user.address = scheduleResponse.user.address
+                user.addressNumber = scheduleResponse.user.addressNumber
+                user.cep = scheduleResponse.user.cep
+                user.city = scheduleResponse.user.city
+                user.state = scheduleResponse.user.state
                 schedule.user = user
 
                 const entrepreneur = new Entrepreneur()
@@ -135,6 +140,12 @@ export class SchedulingController {
                 entrepreneur.name = scheduleResponse.entrepreneur.name
                 entrepreneur.companyName =
                     scheduleResponse.entrepreneur.companyName
+                entrepreneur.address = scheduleResponse.entrepreneur.address
+                entrepreneur.addressNumber =
+                    scheduleResponse.entrepreneur.addressNumber
+                entrepreneur.cep = scheduleResponse.entrepreneur.cep
+                entrepreneur.city = scheduleResponse.entrepreneur.city
+                entrepreneur.state = scheduleResponse.entrepreneur.state
                 schedule.entrepreneur = entrepreneur
 
                 const modality = new Modality()
@@ -217,6 +228,15 @@ export class SchedulingController {
                 const entrepreneur = new Entrepreneur()
                 entrepreneur.entrepreneurId =
                     scheduleResponse.entrepreneur.entrepreneurId
+                entrepreneur.name = scheduleResponse.entrepreneur.name
+                entrepreneur.companyName =
+                    scheduleResponse.entrepreneur.companyName
+                entrepreneur.address = scheduleResponse.entrepreneur.address
+                entrepreneur.addressNumber =
+                    scheduleResponse.entrepreneur.addressNumber
+                entrepreneur.cep = scheduleResponse.entrepreneur.cep
+                entrepreneur.city = scheduleResponse.entrepreneur.city
+                entrepreneur.state = scheduleResponse.entrepreneur.state
                 schedule.entrepreneur = entrepreneur
 
                 schedule.id = scheduleResponse.id
@@ -226,6 +246,11 @@ export class SchedulingController {
                 const user = new User()
                 user.userId = scheduleResponse.user.userId
                 user.name = scheduleResponse.user.name
+                user.address = scheduleResponse.user.address
+                user.addressNumber = scheduleResponse.user.addressNumber
+                user.cep = scheduleResponse.user.cep
+                user.city = scheduleResponse.user.city
+                user.state = scheduleResponse.user.state
                 schedule.user = user
 
                 const modality = new Modality()
@@ -302,11 +327,26 @@ export class SchedulingController {
 
                     const user = new User()
                     user.userId = scheduleResponse.user.userId
+                    user.name = scheduleResponse.user.name
+                    user.address = scheduleResponse.user.address
+                    user.addressNumber = scheduleResponse.user.addressNumber
+                    user.cep = scheduleResponse.user.cep
+                    user.city = scheduleResponse.user.city
+                    user.state = scheduleResponse.user.state
                     schedule.user = user
 
                     const entrepreneur = new Entrepreneur()
                     entrepreneur.entrepreneurId =
                         scheduleResponse.entrepreneur.entrepreneurId
+                    entrepreneur.name = scheduleResponse.entrepreneur.name
+                    entrepreneur.companyName =
+                        scheduleResponse.entrepreneur.companyName
+                    entrepreneur.address = scheduleResponse.entrepreneur.address
+                    entrepreneur.addressNumber =
+                        scheduleResponse.entrepreneur.addressNumber
+                    entrepreneur.cep = scheduleResponse.entrepreneur.cep
+                    entrepreneur.city = scheduleResponse.entrepreneur.city
+                    entrepreneur.state = scheduleResponse.entrepreneur.state
                     schedule.entrepreneur = entrepreneur
 
                     const modality = new Modality()
@@ -323,6 +363,42 @@ export class SchedulingController {
             return mapSchedules
         } catch (error) {
             return null
+        }
+    }
+
+    @Post(":id/cancel")
+    async cancelSchedule(
+        @Param("id") scheduleId: number,
+        @Headers("authorization") authorizationHeader: string
+    ): Promise<{ message: string }> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken || !decodedToken.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        try {
+            await this.schedulingService.cancelSchedule(
+                scheduleId,
+                decodedToken.id
+            )
+            return { message: "Agendamento cancelado com sucesso" }
+        } catch (error) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: error.message },
+                HttpStatus.BAD_REQUEST
+            )
         }
     }
 }

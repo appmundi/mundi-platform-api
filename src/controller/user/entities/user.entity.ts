@@ -21,6 +21,21 @@ export class User {
     @Column()
     phone: string
 
+    @Column()
+    address: string
+
+    @Column()
+    addressNumber: string
+
+    @Column()
+    cep: string
+
+    @Column()
+    city: string
+
+    @Column()
+    state: string
+
     /*@Column()
     date: Date*/
 

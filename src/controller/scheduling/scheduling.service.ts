@@ -1,4 +1,10 @@
-import { Injectable, Inject, HttpException, HttpStatus, NotFoundException } from "@nestjs/common"
+import {
+    Injectable,
+    Inject,
+    HttpException,
+    HttpStatus,
+    NotFoundException
+} from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
@@ -16,7 +22,7 @@ export class SchedulingService {
         private scheduleRepository: Repository<Schedule>,
         @Inject("MODALITY_REPOSITORY")
         private modalityRepository: Repository<Modality>
-    ) { }
+    ) {}
 
     async isTimeSlotAvailable(
         entrepreneurId: number,
@@ -33,19 +39,17 @@ export class SchedulingService {
     }
 
     async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
-
         console.log("Trying to find the Schedule")
-        const agenda = await this.scheduleRepository.findOne({ where: { id } });
+        const agenda = await this.scheduleRepository.findOne({ where: { id } })
 
         if (!agenda) {
-            throw new NotFoundException(`Agenda with ID ${id} not found`);
+            throw new NotFoundException(`Agenda with ID ${id} not found`)
         }
 
-        agenda.status = newStatus;
+        agenda.status = newStatus
         console.log("Trying to update the Schedule")
-        return this.scheduleRepository.save(agenda);
+        return this.scheduleRepository.save(agenda)
     }
-
 
     async scheduleService(
         userId: number,
@@ -128,5 +132,31 @@ export class SchedulingService {
             relations: ["entrepreneur", "user", "modality"],
             where: { entrepreneur: { entrepreneurId } }
         })
+    }
+
+    async cancelSchedule(
+        scheduleId: number,
+        userId: number
+    ): Promise<Schedule> {
+        const schedule = await this.scheduleRepository.findOne({
+            where: { id: scheduleId },
+            relations: ["user", "entrepreneur"]
+        })
+
+        if (!schedule) {
+            throw new Error("Agendamento não encontrado")
+        }
+
+        if (
+            schedule.user.userId !== userId &&
+            schedule.entrepreneur.entrepreneurId !== userId
+        ) {
+            throw new Error(
+                "Usuário não tem permissão para cancelar este agendamento"
+            )
+        }
+
+        schedule.status = AgendaStatus.CANCELED
+        return await this.scheduleRepository.save(schedule)
     }
 }
