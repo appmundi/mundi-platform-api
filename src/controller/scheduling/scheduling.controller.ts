@@ -132,6 +132,8 @@ export class SchedulingController {
                 user.cep = scheduleResponse.user.cep
                 user.city = scheduleResponse.user.city
                 user.state = scheduleResponse.user.state
+                user.phone = scheduleResponse.user.phone
+
                 schedule.user = user
 
                 const entrepreneur = new Entrepreneur()
@@ -146,6 +148,8 @@ export class SchedulingController {
                 entrepreneur.cep = scheduleResponse.entrepreneur.cep
                 entrepreneur.city = scheduleResponse.entrepreneur.city
                 entrepreneur.state = scheduleResponse.entrepreneur.state
+                entrepreneur.phone = scheduleResponse.entrepreneur.phone
+
                 schedule.entrepreneur = entrepreneur
 
                 const modality = new Modality()
@@ -237,6 +241,7 @@ export class SchedulingController {
                 entrepreneur.cep = scheduleResponse.entrepreneur.cep
                 entrepreneur.city = scheduleResponse.entrepreneur.city
                 entrepreneur.state = scheduleResponse.entrepreneur.state
+                entrepreneur.phone = scheduleResponse.entrepreneur.phone
                 schedule.entrepreneur = entrepreneur
 
                 schedule.id = scheduleResponse.id
@@ -251,6 +256,7 @@ export class SchedulingController {
                 user.cep = scheduleResponse.user.cep
                 user.city = scheduleResponse.user.city
                 user.state = scheduleResponse.user.state
+                user.phone = scheduleResponse.user.phone
                 schedule.user = user
 
                 const modality = new Modality()
@@ -333,6 +339,7 @@ export class SchedulingController {
                     user.cep = scheduleResponse.user.cep
                     user.city = scheduleResponse.user.city
                     user.state = scheduleResponse.user.state
+                    user.phone = scheduleResponse.user.phone
                     schedule.user = user
 
                     const entrepreneur = new Entrepreneur()
@@ -347,6 +354,8 @@ export class SchedulingController {
                     entrepreneur.cep = scheduleResponse.entrepreneur.cep
                     entrepreneur.city = scheduleResponse.entrepreneur.city
                     entrepreneur.state = scheduleResponse.entrepreneur.state
+                    entrepreneur.phone = scheduleResponse.entrepreneur.phone
+
                     schedule.entrepreneur = entrepreneur
 
                     const modality = new Modality()
