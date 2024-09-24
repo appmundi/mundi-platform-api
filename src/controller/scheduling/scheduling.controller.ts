@@ -32,48 +32,57 @@ export class SchedulingController {
     async scheduleService(
         @Body()
         body: {
-            modalityId: number
-            entrepreneurId: number
-            scheduledDate: Date
+            modalityId: number;
+            entrepreneurId: number;
+            scheduledDate: Date;
+            status: AgendaStatus;
         },
         @Headers("Authorization") authorizationHeader: string
     ) {
         try {
             if (!authorizationHeader) {
                 throw new HttpException(
-                    {
-                        status: HttpStatus.BAD_REQUEST,
-                        error: "Token JWT ausente"
-                    },
+                    { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
                     HttpStatus.BAD_REQUEST
-                )
+                );
             }
-
-            const token = authorizationHeader.split(" ")[1]
-            const decodedToken = jwt.decode(token) as JwtPayload
-
+    
+            const token = authorizationHeader.split(" ")[1];
+            const decodedToken = jwt.decode(token) as JwtPayload;
+    
             if (!decodedToken || !decodedToken.id) {
                 throw new HttpException(
-                    {
-                        status: HttpStatus.BAD_REQUEST,
-                        error: "Token JWT inválido"
-                    },
+                    { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
                     HttpStatus.BAD_REQUEST
-                )
+                );
             }
-
-            const userId = decodedToken.id
-
+    
+            const userId = decodedToken.id;
+    
+        
+            const isAvailable = await this.schedulingService.isTimeAvailable(
+                body.entrepreneurId,
+                body.scheduledDate
+            );
+    
+            if (!isAvailable) {
+                throw new HttpException(
+                    { status: HttpStatus.BAD_REQUEST, error: "Horário indisponível" },
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+    
             const result = await this.schedulingService.scheduleService(
                 userId,
                 body.modalityId,
                 body.entrepreneurId,
-                body.scheduledDate
-            )
-
-            return { message: result }
+                body.scheduledDate,
+                AgendaStatus.INIT
+            );
+    
+            return { message: result };
         } catch (error) {
-            return { error: error.message }
+            return { error: error.message };
         }
     }
 
@@ -107,15 +116,13 @@ export class SchedulingController {
         const schedules = await this.schedulingService.findByUserId(
             decodedToken.id
         )
+        const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
 
-        if (!schedules || schedules.length === 0) {
+        if (!filteredSchedules || filteredSchedules.length === 0) {
             throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Nenhum agendamento encontrado"
-                },
+                { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
                 HttpStatus.BAD_REQUEST
-            )
+            );
         }
 
         const mappedSchedules: Schedule[] = schedules.map(
@@ -215,14 +222,13 @@ export class SchedulingController {
             decodedToken.id
         )
 
-        if (!schedules || schedules.length === 0) {
+        const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
+
+        if (!filteredSchedules || filteredSchedules.length === 0) {
             throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Nenhum agendamento encontrado"
-                },
+                { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
                 HttpStatus.BAD_REQUEST
-            )
+            );
         }
 
         const mappedSchedules: Schedule[] = schedules.map(
@@ -305,11 +311,14 @@ export class SchedulingController {
 
             const entrepreneurId = decodedToken.id
 
-            const schedules = await this.schedulingService.findByEntrepreneurId(
+            let schedules = await this.schedulingService.findByEntrepreneurId(
                 entrepreneurId
             )
 
+             schedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
+            
             let filteredSchedules = schedules
+
 
             if (startDate && endDate) {
                 const parsedStartDate = new Date(startDate)
@@ -410,4 +419,15 @@ export class SchedulingController {
             )
         }
     }
+
+
+
+@Get(":entrepreneurId/available-times")
+async getAvailableTimes(
+    @Param("entrepreneurId") entrepreneurId: number,
+    @Query("date") date: string 
+): Promise<string[]> {
+    const dateObject = new Date(date); 
+    return this.schedulingService.getAvailableTimes(entrepreneurId, dateObject);
+}
 }

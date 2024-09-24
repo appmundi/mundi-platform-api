@@ -55,7 +55,8 @@ export class SchedulingService {
         userId: number,
         id: number,
         entrepreneurId: number,
-        scheduledDate: Date
+        scheduledDate: Date,
+        timeSlot: string
     ) {
         const user = await this.userRepository.findOne({ where: { userId } })
 
@@ -76,6 +77,10 @@ export class SchedulingService {
                 HttpStatus.BAD_REQUEST
             )
         }
+       
+        const scheduledDateTime = new Date(scheduledDate);
+    const [hours, minutes] = timeSlot.split(":").map(Number);
+    scheduledDateTime.setHours(hours, minutes, 0, 0);
 
         const isAvailable = await this.isTimeSlotAvailable(
             entrepreneurId,
@@ -158,5 +163,50 @@ export class SchedulingService {
 
         schedule.status = AgendaStatus.CANCELED
         return await this.scheduleRepository.save(schedule)
+    }
+
+
+    async isTimeAvailable(entrepreneurId: number, scheduledDate: Date): Promise<boolean> {
+        const scheduledAppointments = await this.findByEntrepreneurId(entrepreneurId);
+        
+        const isTimeSlotTaken = scheduledAppointments.some(schedule => {
+            const existingScheduledDate = new Date(schedule.scheduledDate);
+            return existingScheduledDate.getTime() === scheduledDate.getTime();
+        });
+    
+        return !isTimeSlotTaken; 
+    }
+
+
+    async getAvailableTimes(entrepreneurId: number, date: Date): Promise<string[]> {
+      
+        const scheduledAppointments = await this.findByEntrepreneurId(entrepreneurId);
+       
+        const workingHours = [
+            "07:00",
+            "08:00",
+            "09:00",
+            "10:00",
+            "11:00",
+            "12:00",
+            "13:00",
+            "14:00",
+            "15:00",
+            "16:00",
+            "17:00",
+            "18:00",
+            "19:00"
+        ];
+    
+        const occupiedTimes = scheduledAppointments
+            .filter(schedule => {
+                const scheduledDate = new Date(schedule.scheduledDate);
+                return scheduledDate.toDateString() === date.toDateString();
+            })
+            .map(schedule => {
+                return new Date(schedule.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            });
+    
+        return workingHours.filter(time => !occupiedTimes.includes(time));
     }
 }

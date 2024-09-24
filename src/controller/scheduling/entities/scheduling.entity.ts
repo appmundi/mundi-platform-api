@@ -42,7 +42,7 @@ export class Schedule {
     @Column({
         type: 'enum',
         enum: AgendaStatus,
-        default: AgendaStatus.INIT, // Valor padrão
+        default: AgendaStatus.INIT, 
       })
       status: AgendaStatus;
 
