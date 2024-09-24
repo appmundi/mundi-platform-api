@@ -34,7 +34,7 @@ export class SchedulingController {
         body: {
             modalityId: number;
             entrepreneurId: number;
-            scheduledDate: Date;
+            scheduledDate: string;
             status: AgendaStatus;
         },
         @Headers("Authorization") authorizationHeader: string
@@ -58,11 +58,20 @@ export class SchedulingController {
             }
     
             const userId = decodedToken.id;
+            console.log("Recebido scheduledDate:", body.scheduledDate);
+            const scheduledDate = new Date(body.scheduledDate);
+    
+            if (isNaN(scheduledDate.getTime())) {
+                throw new HttpException(
+                    { status: HttpStatus.BAD_REQUEST, error: "Data agendada inválida" },
+                    HttpStatus.BAD_REQUEST
+                );
+            }
     
         
             const isAvailable = await this.schedulingService.isTimeAvailable(
                 body.entrepreneurId,
-                body.scheduledDate
+                scheduledDate
             );
     
             if (!isAvailable) {
@@ -76,7 +85,7 @@ export class SchedulingController {
                 userId,
                 body.modalityId,
                 body.entrepreneurId,
-                body.scheduledDate,
+                scheduledDate,
                 AgendaStatus.INIT
             );
     
