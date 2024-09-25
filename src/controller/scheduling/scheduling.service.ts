@@ -179,25 +179,38 @@ export class SchedulingService {
 
 
     async getAvailableTimes(entrepreneurId: number, date: Date): Promise<string[]> {
-      
-        const scheduledAppointments = await this.findByEntrepreneurId(entrepreneurId);
        
-        const workingHours = [
-            "07:00",
-            "08:00",
-            "09:00",
-            "10:00",
-            "11:00",
-            "12:00",
-            "13:00",
-            "14:00",
-            "15:00",
-            "16:00",
-            "17:00",
-            "18:00",
-            "19:00"
-        ];
-    
+        const scheduledAppointments = await this.findByEntrepreneurId(entrepreneurId);
+
+       
+        const entrepreneur = await this.entrepreneurRepository.findOne({
+            where: { entrepreneurId }
+        });
+
+        if (!entrepreneur) {
+            throw new Error("Entrepreneur not found");
+        }
+
+        
+        const operationHours = Array.isArray(entrepreneur.operation) 
+            ? entrepreneur.operation 
+            : JSON.parse(entrepreneur.operation as unknown as string);
+
+     
+        const dayOfWeek = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+
+      
+        const todayOperation = operationHours.find((op: any) => op.day === dayOfWeek && op.isActive);
+
+        if (!todayOperation) {
+           
+            return [];
+        }
+
+      
+        const workingHours = this.generateWorkingHours(todayOperation.openinHours, todayOperation.closingTime);
+
+  
         const occupiedTimes = scheduledAppointments
             .filter(schedule => {
                 const scheduledDate = new Date(schedule.scheduledDate);
@@ -206,7 +219,24 @@ export class SchedulingService {
             .map(schedule => {
                 return new Date(schedule.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             });
-    
+
+      
         return workingHours.filter(time => !occupiedTimes.includes(time));
     }
+
+ 
+    private generateWorkingHours(openingTime: string, closingTime: string): string[] {
+        const hours: string[] = [];
+        let currentTime = openingTime;
+        
+        while (currentTime < closingTime) {
+            hours.push(currentTime);
+  
+            const [hour, minute] = currentTime.split(':').map(Number);
+            currentTime = new Date(0, 0, 0, hour + 1, minute).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        return hours;
+    }
 }
+
