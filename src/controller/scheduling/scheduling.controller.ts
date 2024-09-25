@@ -431,12 +431,13 @@ export class SchedulingController {
 
 
 
-@Get(":entrepreneurId/available-times")
-async getAvailableTimes(
-    @Param("entrepreneurId") entrepreneurId: number,
-    @Query("date") date: string 
-): Promise<string[]> {
-    const dateObject = new Date(date); 
-    return this.schedulingService.getAvailableTimes(entrepreneurId, dateObject);
-}
+    @Get(":entrepreneurId/available-times")
+    async getAvailableTimes(
+        @Param("entrepreneurId") entrepreneurId: number,
+        @Query("date") date: string 
+    ): Promise<string[]> {
+        const dateObject = new Date(date);
+        const dateString = dateObject.toISOString(); 
+        return this.schedulingService.getAvailableTimes(entrepreneurId, dateString); 
+    }
 }

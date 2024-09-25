@@ -3,13 +3,16 @@ import {
     Inject,
     HttpException,
     HttpStatus,
-    NotFoundException
+    NotFoundException,
+    Param,
+    Query
 } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import { Modality } from "../modality/entities/modality.entity"
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class SchedulingService {
@@ -177,66 +180,77 @@ export class SchedulingService {
         return !isTimeSlotTaken; 
     }
 
-
-    async getAvailableTimes(entrepreneurId: number, date: Date): Promise<string[]> {
+    async getAvailableTimes(entrepreneurId: number, date: string): Promise<string[]> {
+        
+        const dateObj = DateTime.fromISO(date, { setZone: 'America/Sao_Paulo' }); 
        
+    
         const scheduledAppointments = await this.findByEntrepreneurId(entrepreneurId);
-
-       
+        
+    
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
         });
-
+    
         if (!entrepreneur) {
             throw new Error("Entrepreneur not found");
         }
-
+    
         
-        const operationHours = Array.isArray(entrepreneur.operation) 
-            ? entrepreneur.operation 
+        const operationHours = Array.isArray(entrepreneur.operation)
+            ? entrepreneur.operation
             : JSON.parse(entrepreneur.operation as unknown as string);
-
-     
-        const dayOfWeek = date.toLocaleDateString('pt-BR', { weekday: 'long' });
-
-      
-        const todayOperation = operationHours.find((op: any) => op.day === dayOfWeek && op.isActive);
-
+    
+        
+        const dayOfWeek = dateObj.toFormat('cccc', { locale: 'pt-BR' }).trim().toLowerCase(); 
+        //console.log('Dia da semana:', dayOfWeek);
+    
+        const todayOperation = operationHours.find((op: any) => {
+            return op.day.trim().toLowerCase() === dayOfWeek && op.isActive; 
+        });
+    
+        console.log('Operação de hoje:', todayOperation);
+    
         if (!todayOperation) {
-           
+           // console.log('Nenhuma operação ativa para hoje.');
             return [];
         }
-
-      
+    
+       
         const workingHours = this.generateWorkingHours(todayOperation.openinHours, todayOperation.closingTime);
-
-  
+       // console.log('Horários de funcionamento gerados:', workingHours);
+    
+       
         const occupiedTimes = scheduledAppointments
             .filter(schedule => {
-                const scheduledDate = new Date(schedule.scheduledDate);
-                return scheduledDate.toDateString() === date.toDateString();
+                const scheduledDate = DateTime.fromISO(schedule.scheduledDate);
+                return scheduledDate.toISODate() === dateObj.toISODate();
             })
-            .map(schedule => {
-                return new Date(schedule.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            });
-
+            .map(schedule => DateTime.fromISO(schedule.scheduledDate).toFormat('HH:mm'));
+    
+        //console.log('Horários ocupados:', occupiedTimes);
+    
       
-        return workingHours.filter(time => !occupiedTimes.includes(time));
+        const availableTimes = workingHours.filter(time => !occupiedTimes.includes(time));
+        //console.log('Horários disponíveis:', availableTimes);
+    
+        return availableTimes;
     }
-
- 
+    
+    
     private generateWorkingHours(openingTime: string, closingTime: string): string[] {
         const hours: string[] = [];
-        let currentTime = openingTime;
-        
-        while (currentTime < closingTime) {
-            hours.push(currentTime);
-  
-            const [hour, minute] = currentTime.split(':').map(Number);
-            currentTime = new Date(0, 0, 0, hour + 1, minute).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        let currentTime = DateTime.fromFormat(openingTime, 'HH:mm');
+        const closingTimeObj = DateTime.fromFormat(closingTime, 'HH:mm');
+    
+        while (currentTime <= closingTimeObj) {
+            hours.push(currentTime.toFormat('HH:mm'));
+            currentTime = currentTime.plus({ hours: 1 }); 
         }
-
+    
         return hours;
+    
     }
+    
 }
 
