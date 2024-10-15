@@ -240,7 +240,7 @@ export class SchedulingController {
             );
         }
 
-        const mappedSchedules: Schedule[] = schedules.map(
+        const mappedSchedules: Schedule[] = filteredSchedules.map(
             (scheduleResponse) => {
                 const schedule = new Schedule()
 
