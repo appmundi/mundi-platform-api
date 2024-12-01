@@ -36,16 +36,21 @@ export class ImagesController {
     }
 
     @Get("byEntrepreneur/:entrepreneurId")
-    async getImagesByEntrepreneurId(
-        @Param("entrepreneurId") entrepreneurId: number
-    ): Promise<{ id: number; url: string }[]> {
-        const images = await this.imagesService.getImagesByEntrepreneurId(entrepreneurId);
+async getImagesByEntrepreneurId(
+    @Param("entrepreneurId") entrepreneurId: number
+): Promise<{ id: number; url: string }[]> {
+    const images = await this.imagesService.getImagesByEntrepreneurId(entrepreneurId);
 
-        return images.map(image => ({
+    return images.map(image => {
+        // Ajusta o caminho do arquivo
+        const filename = image.filename.split('/').pop();
+        return {
             id: image.id,
-            url: `https://api.mundiapp.com.br/uploads/images/${image.filename.split('/').pop()}`,
-        }));
-    }
+            url: `https://api.mundiapp.com.br/uploads/images/${filename}`,
+        };
+    });
+}
+
 
 
     @Delete("delete/:id")
