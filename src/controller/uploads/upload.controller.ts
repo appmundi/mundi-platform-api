@@ -13,7 +13,7 @@ import { ImagesService } from "./upload.service"
 
 @Controller("images")
 export class ImagesController {
-    constructor(private readonly imagesService: ImagesService) {}
+    constructor(private readonly imagesService: ImagesService) { }
 
     @Post("upload")
     @UseInterceptors(FileFieldsInterceptor([{ name: "images", maxCount: 5 }]))
@@ -38,9 +38,15 @@ export class ImagesController {
     @Get("byEntrepreneur/:entrepreneurId")
     async getImagesByEntrepreneurId(
         @Param("entrepreneurId") entrepreneurId: number
-    ) {
-        return this.imagesService.getImagesByEntrepreneurId(entrepreneurId)
+    ): Promise<{ id: number; url: string }[]> {
+        const images = await this.imagesService.getImagesByEntrepreneurId(entrepreneurId);
+
+        return images.map(image => ({
+            id: image.id,
+            url: `https://api.mundiapp.com.br/uploads/images/${image.filename.split('/').pop()}`,
+        }));
     }
+
 
     @Delete("delete/:id")
     async deleteImage(@Param("id") id: number) {
