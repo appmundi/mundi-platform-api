@@ -3,21 +3,24 @@ import { NestFactory } from "@nestjs/core"
 import { AppModule } from "./app.module"
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger"
 import { join } from 'path';
-import * as express from 'express';
+import { NestExpressApplication } from '@nestjs/platform-express';
+
 
 
 declare const module: any
 
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
     // Configurar arquivos estáticos
     const uploadsPath = join(__dirname, '..', 'uploads');
     console.log('Servindo arquivos estáticos de:', uploadsPath);
 
-    // Use Express para arquivos estáticos se necessário
-    app.use('/uploads', express.static(uploadsPath));
+    app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+        prefix: '/uploads/',
+    });
+    
 
     // Configurar validação global
     app.useGlobalPipes(new ValidationPipe());
