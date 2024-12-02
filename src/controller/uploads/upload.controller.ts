@@ -10,6 +10,8 @@ import {
 } from "@nestjs/common"
 import { FileFieldsInterceptor } from "@nestjs/platform-express"
 import { ImagesService } from "./upload.service"
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Controller("images")
 export class ImagesController {
@@ -38,18 +40,15 @@ export class ImagesController {
     @Get("byEntrepreneur/:entrepreneurId")
 async getImagesByEntrepreneurId(
     @Param("entrepreneurId") entrepreneurId: number
-): Promise<{ id: number; url: string }[]> {
+): Promise<{ id: number; base64: string }[]> {
     const images = await this.imagesService.getImagesByEntrepreneurId(entrepreneurId);
 
-    return images.map(image => {
-        // Ajusta o caminho do arquivo
-        const filename = image.filename.split('/').pop();
-        return {
-            id: image.id,
-            url: `https://api.mundiapp.com.br/uploads/images/${filename}`,
-        };
-    });
+    return images.map(image => ({
+        id: image.id,
+        base64: `data:image/jpeg;base64,${image.base64}`, // Formato base64 com prefixo MIME
+    }));
 }
+
 
 
 

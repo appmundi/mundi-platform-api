@@ -17,33 +17,42 @@ export class ImagesService {
     async uploadImage(
         image: Express.Multer.File,
         entrepreneurId: number
-    ): Promise<{ path: string }> {
-        const fileName = `${Date.now()}-${image.originalname}`
+    ): Promise<{ base64: string }> {
+        const fileName = `${Date.now()}-${image.originalname}`;
         const uploadFolder = path.resolve(
             __dirname,
             "../../../src/controller/uploads/images"
-        )
-
-        const filePath = path.join(uploadFolder, fileName)
-
-        fs.writeFileSync(filePath, image.buffer)
-
+        );
+    
+        const filePath = path.join(uploadFolder, fileName);
+    
+        fs.mkdirSync(uploadFolder, { recursive: true }); 
+        fs.writeFileSync(filePath, image.buffer);
+    
+        const base64Image = image.buffer.toString("base64");
+    
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
-        })
-        const imageEntity = new Image()
-        imageEntity.filename = filePath
-        imageEntity.entrepreneur = entrepreneur
-
-        await this.imageRepository.save(imageEntity)
-
-        return { path: filePath }
+        });
+        if (!entrepreneur) {
+            throw new Error("Entrepreneur not found");
+        }
+    
+        const imageEntity = new Image();
+        imageEntity.filename = fileName; 
+        imageEntity.base64 = base64Image;
+        imageEntity.entrepreneur = entrepreneur;
+    
+        await this.imageRepository.save(imageEntity);
+    
+        return { base64: `data:image/jpeg;base64,${base64Image}` }; 
     }
 
     async getImagesByEntrepreneurId(entrepreneurId: number): Promise<Image[]> {
         return this.imageRepository.find({
-            where: { entrepreneur: { entrepreneurId: entrepreneurId } }
-        })
+            where: { entrepreneur: { entrepreneurId: entrepreneurId } }, // Ajusta a chave estrangeira
+            relations: ['entrepreneur'], // Inclui a relação, se necessário
+        });
     }
 
     async deleteImage(id: number): Promise<void> {
