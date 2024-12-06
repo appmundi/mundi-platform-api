@@ -245,7 +245,7 @@ export class SchedulingService {
     
         while (currentTime <= closingTimeObj) {
             hours.push(currentTime.toFormat('HH:mm'));
-            currentTime = currentTime.plus({ hours: 1 }); 
+            currentTime = currentTime.plus({ minutes: 30 }); 
         }
     
         return hours;
