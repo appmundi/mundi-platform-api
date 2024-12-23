@@ -45,11 +45,9 @@ async getImagesByEntrepreneurId(
 
     return images.map(image => ({
         id: image.id,
-        base64: `data:image/jpeg;base64,${image.base64}`, // Formato base64 com prefixo MIME
+        base64: `data:image/jpeg;base64,${image.base64}`, 
     }));
 }
-
-
 
 
     @Delete("delete/:id")

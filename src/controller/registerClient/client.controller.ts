@@ -2,6 +2,7 @@ import {
     Body,
     Controller,
     Get,
+    Delete,
     Param,
     Post,
     NotFoundException
@@ -56,5 +57,10 @@ export class ClientController {
         } catch (error) {
             throw new Error("Falha ao buscar clientes por empreendedor")
         }
+    }
+
+    @Delete(":id/delete")
+    async deleteUser(@Param("id") clientId: number): Promise<void> {
+        return this.clientService.deleteUser(clientId)
     }
 }

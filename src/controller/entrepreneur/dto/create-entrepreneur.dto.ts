@@ -1,4 +1,8 @@
-import { IsString, IsEmail, IsNumber, IsBoolean, IsJSON } from "class-validator"
+import { IsString, IsEmail, IsNumber, IsBoolean, IsJSON, } from "class-validator"
+import { Image } from "src/controller/uploads/entities/upload.entity"
+import {
+    OneToMany,
+} from "typeorm"
 
 export class CreateEntrepreneurDto {
     @IsString({ message: "O nome é Obrigatorio" })
@@ -49,4 +53,6 @@ export class CreateEntrepreneurDto {
 
     @IsBoolean()
     readonly status?: boolean
+
+    readonly image: Express.Multer.File;
 }

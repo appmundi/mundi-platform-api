@@ -9,18 +9,18 @@ import { ResultDto } from "src/dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
 import { Repository } from "typeorm"
-import { JwtService } from "@nestjs/jwt"
 import * as bcrypt from "bcrypt"
 import { Work } from "../work/entities/work.entity"
 import { Category } from "../category/entities/category.entity"
 import { Schedule } from "../scheduling/entities/scheduling.entity"
+import { Image } from "../uploads/entities/upload.entity"
+
 
 @Injectable()
 export class EntrepreneurService {
     constructor(
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
-        private jwtService: JwtService
     ) {}
 
     async findAll(): Promise<Entrepreneur[]> {
@@ -143,6 +143,19 @@ export class EntrepreneurService {
         entrepreneur.valueDeslocation = data.valueDeslocation
         entrepreneur.operation = data.operation
         entrepreneur.status = data.status
+
+        /*const fileName = `${Date.now()}-${data.image.originalname}`;
+
+
+        const base64Image = data.image.buffer.toString("base64");
+
+        const imageEntity = new Image();
+        imageEntity.filename = fileName;
+        imageEntity.base64 = base64Image;
+        imageEntity.entrepreneur = entrepreneur;
+
+        await this.imageRepository.save(imageEntity);*/
+
 
         return await this.entrepreneurRepository
             .save(entrepreneur)

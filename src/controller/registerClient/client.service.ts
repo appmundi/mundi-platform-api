@@ -1,6 +1,5 @@
-import { Injectable, Inject, NotFoundException } from "@nestjs/common"
+import { Injectable, Inject, NotFoundException, HttpException, HttpStatus } from "@nestjs/common"
 import { Repository } from "typeorm"
-
 import { Client } from "./entities/client.entity"
 import { EntrepreneurService } from "../entrepreneur/entrepreneur.service"
 
@@ -43,5 +42,27 @@ export class ClientService {
         return this.clientRepository.find({
             where: { entrepreneur: { entrepreneurId: entrepreneurId } }
         })
+    }
+
+    async findClientsById(
+        clientId: number
+    ): Promise<Client[]> {
+        return this.clientRepository.find({
+            where: { id: clientId }
+        })
+    }
+
+    async deleteUser(clientId: number): Promise<void> {
+        const user = await this.findClientsById(clientId)
+        if (!user) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Usuario nao encontrado"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+        await this.clientRepository.remove(user)
     }
 }
