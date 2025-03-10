@@ -4,6 +4,7 @@ import { User } from "./entities/user.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
 import { ResultDto } from "src/dto/result.dto"
 import * as bcrypt from "bcrypt"
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -163,4 +164,38 @@ export class UserService {
     async findOneByUserId(userId: number): Promise<User | undefined> {
         return this.userRepository.findOne({ where: { userId } })
     }
+
+    generateResetCode(): string {
+        return randomBytes(4).toString('hex').toUpperCase(); 
+    }
+
+    async setResetPasswordCode(email: string, code: string): Promise<void> {
+        const user = await this.userRepository.findOne({ where: { email } });
+        if (!user) {
+            throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
+        }
+
+        user.resetPasswordCode = code;
+        user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora de expiração
+        await this.userRepository.save(user);
+    }
+
+    async validateResetPasswordCode(email: string, code: string): Promise<boolean> {
+        const user = await this.userRepository.findOne({ where: { email } });
+        if (!user || user.resetPasswordCode !== code || user.resetPasswordExpires < new Date()) {
+            return false;
+        }
+        return true;
+    }
+
+    async clearResetPasswordCode(email: string): Promise<void> {
+        const user = await this.userRepository.findOne({ where: { email } });
+        if (user) {
+            user.resetPasswordCode = null;
+            user.resetPasswordExpires = null;
+            await this.userRepository.save(user);
+        }
+    }
+
+    
 }

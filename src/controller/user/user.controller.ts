@@ -1,4 +1,5 @@
 import {
+    Inject,
     Controller,
     Post,
     Body,
@@ -23,12 +24,20 @@ import { ReturnUserDto } from "./dto/return-user.dto"
 import { ValidateDoc } from "../helpers/validate.cpf"
 import { ValidatePhone } from "../helpers/validate.phone"
 import { User } from "./entities/user.entity"
+import { MailService } from "../../mail/mail.service";
+import * as bcrypt from "bcrypt"
+import { Repository } from "typeorm"
+
+
 
 @Controller("user")
 export class UserController {
     constructor(
         private readonly userService: UserService,
-        private authService: AuthService
+        private authService: AuthService,
+        private mailService: MailService,
+        @Inject("USER_REPOSITORY")
+        private userRepository: Repository<User>
     ) { }
 
     @UseGuards(JwtAuthGuard)
@@ -39,9 +48,9 @@ export class UserController {
 
     @Get("searchById:id")
     async findOneByUserId(@Param("id") userId: number): Promise<User> {
-        try{
+        try {
             return this.userService.findOneByUserId(userId)
-        }catch(e){
+        } catch (e) {
             console.log(e)
         }
     }
@@ -118,5 +127,66 @@ export class UserController {
     @Delete(":id")
     async deleteUser(@Param("id") id: number): Promise<void> {
         return this.userService.deleteUser(id)
+    }
+
+    @Post("reset-password")
+    async requestResetPassword(@Body('email') email: string): Promise<ResultDto> {
+        const user = await this.userService.findOneByEmail(email);
+        if (!user) {
+            throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
+        }
+
+        const resetCode = this.userService.generateResetCode();
+        await this.userService.setResetPasswordCode(email, resetCode);
+
+        await this.mailService.sendResetPasswordEmail(email, resetCode);
+
+        return {
+            status: true,
+            mensagem: 'E-mail de redefinição de senha enviado com sucesso.'
+        };
+    }
+
+    @Post("validate-reset-code")
+    async validateResetCode(
+        @Body('email') email: string,
+        @Body('code') code: string
+    ): Promise<ResultDto> {
+        const isValid = await this.userService.validateResetPasswordCode(email, code);
+        if (!isValid) {
+            throw new HttpException('Código inválido ou expirado', HttpStatus.BAD_REQUEST);
+        }
+
+        return {
+            status: true,
+            mensagem: 'Código válido.'
+        };
+    }
+
+    @Post("update-password")
+    async updatePassword(
+        @Body('email') email: string,
+        @Body('code') code: string,
+        @Body('newPassword') newPassword: string
+    ): Promise<ResultDto> {
+        const isValid = await this.userService.validateResetPasswordCode(email, code);
+        if (!isValid) {
+            throw new HttpException('Código inválido ou expirado', HttpStatus.BAD_REQUEST);
+        }
+
+        const user = await this.userService.findOneByEmail(email);
+        if (!user) {
+            throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
+        }
+
+        user.password = bcrypt.hashSync(newPassword, 8);
+        await this.userRepository.save(user);
+
+        await this.userService.clearResetPasswordCode(email);
+
+        return {
+            status: true,
+            mensagem: 'Senha atualizada com sucesso.'
+        };
     }
 }

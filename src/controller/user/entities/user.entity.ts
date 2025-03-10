@@ -36,6 +36,12 @@ export class User {
     @Column()
     state: string
 
+    @Column({ nullable: true })
+    resetPasswordCode: string;
+
+    @Column({ nullable: true })
+    resetPasswordExpires: Date;
+
     /*@Column()
     date: Date*/
 
