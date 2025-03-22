@@ -26,12 +26,17 @@ import { AuthService } from "src/auth/auth.service"
 import { Schedule } from "../scheduling/entities/scheduling.entity"
 import { Work } from "../work/entities/work.entity"
 import { Category } from "../category/entities/category.entity"
+import { MailService } from "src/mail/mail.service"
+import { Repository } from "typeorm"
+import * as bcrypt from "bcrypt"
 
 @Controller("entrepreneur")
 export class EntrepreneurController {
     constructor(
         private readonly entrepreneurService: EntrepreneurService,
-        private authService: AuthService
+        private entrepreneurRepository: Repository<Entrepreneur>,
+        private authService: AuthService,
+        private mailService: MailService,
     ) {}
 
     @UsePipes(ValidationPipe)
@@ -158,4 +163,106 @@ export class EntrepreneurController {
     ): Promise<void> {
         await this.entrepreneurService.updateCategory(id, categoryData)
     }
+
+    @Post('reset-password')
+        async requestResetPassword(
+            @Body('email') email: string,
+        ): Promise<ResultDto> {
+            try {
+                const user = await this.entrepreneurService.findOneByEmail(email);
+                if (!user) {
+                    throw new HttpException(
+                        'Usuário não encontrado',
+                        HttpStatus.NOT_FOUND,
+                    );
+                }
+    
+                const resetCode = this.entrepreneurService.generateResetCode();
+                await this.entrepreneurService.setResetPasswordCode(email, resetCode);
+    
+                await this.mailService.sendResetPasswordEmail(email, resetCode);
+    
+                return {
+                    status: true,
+                    mensagem: 'E-mail de redefinição de senha enviado com sucesso.',
+                };
+            } catch (error) {
+                throw new HttpException(
+                    error.message || 'Erro ao processar a solicitação',
+                    error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+        }
+    
+        @Post('validate-reset-code')
+        async validateResetCode(
+            @Body('email') email: string,
+            @Body('code') code: string,
+        ): Promise<ResultDto> {
+            try {
+                const isValid = await this.entrepreneurService.validateResetPasswordCode(
+                    email,
+                    code,
+                );
+                if (!isValid) {
+                    throw new HttpException(
+                        'Código inválido ou expirado',
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+    
+                return {
+                    status: true,
+                    mensagem: 'Código válido.',
+                };
+            } catch (error) {
+                throw new HttpException(
+                    error.message || 'Erro ao validar o código',
+                    error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+        }
+    
+        @Post('update-password')
+        async updatePassword(
+            @Body('email') email: string,
+            @Body('code') code: string,
+            @Body('newPassword') newPassword: string,
+        ): Promise<ResultDto> {
+            try {
+                const isValid = await this.entrepreneurService.validateResetPasswordCode(
+                    email,
+                    code,
+                );
+                if (!isValid) {
+                    throw new HttpException(
+                        'Código inválido ou expirado',
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+    
+                const user = await this.entrepreneurService.findOneByEmail(email);
+                if (!user) {
+                    throw new HttpException(
+                        'Usuário não encontrado',
+                        HttpStatus.NOT_FOUND,
+                    );
+                }
+    
+                user.password = bcrypt.hashSync(newPassword, 8);
+                await this.entrepreneurRepository.save(user);
+    
+                await this.entrepreneurService.clearResetPasswordCode(email);
+    
+                return {
+                    status: true,
+                    mensagem: 'Senha atualizada com sucesso.',
+                };
+            } catch (error) {
+                throw new HttpException(
+                    error.message || 'Erro ao atualizar a senha',
+                    error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+        }
 }

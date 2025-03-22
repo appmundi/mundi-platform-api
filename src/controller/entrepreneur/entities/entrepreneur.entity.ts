@@ -66,6 +66,12 @@ export class Entrepreneur {
     @Column()
     status?: boolean
 
+    @Column({ nullable: true })
+    resetPasswordCode: string;
+
+    @Column({ nullable: true })
+    resetPasswordExpires: Date;
+
     @ManyToMany(() => Category)
     @JoinTable()
     category: Category[]

@@ -15,12 +15,11 @@ import { Category } from "../category/entities/category.entity"
 import { Schedule } from "../scheduling/entities/scheduling.entity"
 import { Image } from "../uploads/entities/upload.entity"
 
-
 @Injectable()
 export class EntrepreneurService {
     constructor(
         @Inject("ENTREPRENEUR_REPOSITORY")
-        private entrepreneurRepository: Repository<Entrepreneur>,
+        private entrepreneurRepository: Repository<Entrepreneur>
     ) {}
 
     async findAll(): Promise<Entrepreneur[]> {
@@ -156,11 +155,9 @@ export class EntrepreneurService {
 
         await this.imageRepository.save(imageEntity);*/
 
-
         return await this.entrepreneurRepository
             .save(entrepreneur)
             .then(async (result) => {
-                
                 return <ResultDto>{
                     status: true,
                     mensagem: "Cadastro feito com sucesso!",
@@ -248,24 +245,23 @@ export class EntrepreneurService {
     }
 
     async updateWork(id: number, workData: Partial<Work[]>): Promise<void> {
-        try{
+        try {
             const entrepreneur = await this.entrepreneurRepository
-            .createQueryBuilder("entrepreneur")
-            .leftJoinAndSelect("entrepreneur.work", "work")
-            .where("entrepreneur.entrepreneurId = :id", { id })
-            .getOne()
+                .createQueryBuilder("entrepreneur")
+                .leftJoinAndSelect("entrepreneur.work", "work")
+                .where("entrepreneur.entrepreneurId = :id", { id })
+                .getOne()
 
-        if (!entrepreneur) {
-            throw new NotFoundException("Entrepreneur not found")
-        }
+            if (!entrepreneur) {
+                throw new NotFoundException("Entrepreneur not found")
+            }
 
-        console.log("Work > ", workData)
+            console.log("Work > ", workData)
 
+            entrepreneur.work = [...workData] // Substitui todos os trabalhos antigos pelos novos
 
-        entrepreneur.work = [...workData] // Substitui todos os trabalhos antigos pelos novos
-
-        await this.entrepreneurRepository.save(entrepreneur)
-        }catch(e){
+            await this.entrepreneurRepository.save(entrepreneur)
+        } catch (e) {
             console.log("Ero update > ", e)
         }
     }
@@ -306,5 +302,51 @@ export class EntrepreneurService {
         entrepreneur.schedulling = [...scheduleData] // Substitui todos os agendamentos anteriores pelos novos
 
         await this.entrepreneurRepository.save(entrepreneur)
+    }
+
+    generateResetCode(): string {
+        let code = ""
+        for (let i = 0; i < 8; i++) {
+            code += Math.floor(Math.random() * 10) // Gera um número aleatório entre 0 e 9
+        }
+        return code
+    }
+
+    async setResetPasswordCode(email: string, code: string): Promise<void> {
+        const user = await this.entrepreneurRepository.findOne({ where: { email } })
+        if (!user) {
+            throw new HttpException(
+                "Usuário não encontrado",
+                HttpStatus.NOT_FOUND
+            )
+        }
+
+        user.resetPasswordCode = code
+        user.resetPasswordExpires = new Date(Date.now() + 3600000) // 1 hora de expiração
+        await this.entrepreneurRepository.save(user)
+    }
+
+    async validateResetPasswordCode(
+        email: string,
+        code: string
+    ): Promise<boolean> {
+        const user = await this.entrepreneurRepository.findOne({ where: { email } })
+        if (
+            !user ||
+            user.resetPasswordCode !== code ||
+            user.resetPasswordExpires < new Date()
+        ) {
+            return false
+        }
+        return true
+    }
+
+    async clearResetPasswordCode(email: string): Promise<void> {
+        const entrepreneur = await this.entrepreneurRepository.findOne({ where: { email } })
+        if (entrepreneur) {
+            entrepreneur.resetPasswordCode = null
+            entrepreneur.resetPasswordExpires = null
+            await this.entrepreneurRepository.save(entrepreneur)
+        }
     }
 }
