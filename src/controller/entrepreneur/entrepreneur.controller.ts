@@ -12,7 +12,8 @@ import {
     Delete,
     Param,
     Request,
-    UnauthorizedException
+    UnauthorizedException,
+    Inject
 } from "@nestjs/common"
 import { EntrepreneurService } from "./entrepreneur.service"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
@@ -34,9 +35,10 @@ import * as bcrypt from "bcrypt"
 export class EntrepreneurController {
     constructor(
         private readonly entrepreneurService: EntrepreneurService,
-        private entrepreneurRepository: Repository<Entrepreneur>,
         private authService: AuthService,
         private mailService: MailService,
+        @Inject("ENTREPRENEUR_REPOSITORY")
+        private entrepreneurRepository: Repository<Entrepreneur>,
     ) {}
 
     @UsePipes(ValidationPipe)
