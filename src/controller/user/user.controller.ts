@@ -14,7 +14,6 @@ import {
     Delete,
     UnauthorizedException
 } from "@nestjs/common"
-import { AuthGuard } from "@nestjs/passport"
 import { UserService } from "./user.service"
 import { CreateUserDto } from "./dto/create-user.dto"
 import { ResultDto } from "src/dto/result.dto"
@@ -129,64 +128,105 @@ export class UserController {
         return this.userService.deleteUser(id)
     }
 
-    @Post("reset-password")
-    async requestResetPassword(@Body('email') email: string): Promise<ResultDto> {
-        const user = await this.userService.findOneByEmail(email);
-        if (!user) {
-            throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
+    @Post('reset-password')
+    async requestResetPassword(
+        @Body('email') email: string,
+    ): Promise<ResultDto> {
+        try {
+            const user = await this.userService.findOneByEmail(email);
+            if (!user) {
+                throw new HttpException(
+                    'Usuário não encontrado',
+                    HttpStatus.NOT_FOUND,
+                );
+            }
+
+            const resetCode = this.userService.generateResetCode();
+            await this.userService.setResetPasswordCode(email, resetCode);
+
+            await this.mailService.sendResetPasswordEmail(email, resetCode);
+
+            return {
+                status: true,
+                mensagem: 'E-mail de redefinição de senha enviado com sucesso.',
+            };
+        } catch (error) {
+            throw new HttpException(
+                error.message || 'Erro ao processar a solicitação',
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
-
-        const resetCode = this.userService.generateResetCode();
-        await this.userService.setResetPasswordCode(email, resetCode);
-
-        await this.mailService.sendResetPasswordEmail(email, resetCode);
-
-        return {
-            status: true,
-            mensagem: 'E-mail de redefinição de senha enviado com sucesso.'
-        };
     }
 
-    @Post("validate-reset-code")
+    @Post('validate-reset-code')
     async validateResetCode(
         @Body('email') email: string,
-        @Body('code') code: string
+        @Body('code') code: string,
     ): Promise<ResultDto> {
-        const isValid = await this.userService.validateResetPasswordCode(email, code);
-        if (!isValid) {
-            throw new HttpException('Código inválido ou expirado', HttpStatus.BAD_REQUEST);
-        }
+        try {
+            const isValid = await this.userService.validateResetPasswordCode(
+                email,
+                code,
+            );
+            if (!isValid) {
+                throw new HttpException(
+                    'Código inválido ou expirado',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
 
-        return {
-            status: true,
-            mensagem: 'Código válido.'
-        };
+            return {
+                status: true,
+                mensagem: 'Código válido.',
+            };
+        } catch (error) {
+            throw new HttpException(
+                error.message || 'Erro ao validar o código',
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
     }
 
-    @Post("update-password")
+    @Post('update-password')
     async updatePassword(
         @Body('email') email: string,
         @Body('code') code: string,
-        @Body('newPassword') newPassword: string
+        @Body('newPassword') newPassword: string,
     ): Promise<ResultDto> {
-        const isValid = await this.userService.validateResetPasswordCode(email, code);
-        if (!isValid) {
-            throw new HttpException('Código inválido ou expirado', HttpStatus.BAD_REQUEST);
+        try {
+            const isValid = await this.userService.validateResetPasswordCode(
+                email,
+                code,
+            );
+            if (!isValid) {
+                throw new HttpException(
+                    'Código inválido ou expirado',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            const user = await this.userService.findOneByEmail(email);
+            if (!user) {
+                throw new HttpException(
+                    'Usuário não encontrado',
+                    HttpStatus.NOT_FOUND,
+                );
+            }
+
+            user.password = bcrypt.hashSync(newPassword, 8);
+            await this.userRepository.save(user);
+
+            await this.userService.clearResetPasswordCode(email);
+
+            return {
+                status: true,
+                mensagem: 'Senha atualizada com sucesso.',
+            };
+        } catch (error) {
+            throw new HttpException(
+                error.message || 'Erro ao atualizar a senha',
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
-
-        const user = await this.userService.findOneByEmail(email);
-        if (!user) {
-            throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
-        }
-
-        user.password = bcrypt.hashSync(newPassword, 8);
-        await this.userRepository.save(user);
-
-        await this.userService.clearResetPasswordCode(email);
-
-        return {
-            status: true,
-            mensagem: 'Senha atualizada com sucesso.'
-        };
     }
 }
