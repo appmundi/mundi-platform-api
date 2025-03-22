@@ -166,7 +166,11 @@ export class UserService {
     }
 
     generateResetCode(): string {
-        return randomBytes(4).toString('hex').toUpperCase(); 
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += Math.floor(Math.random() * 10); // Gera um número aleatório entre 0 e 9
+        }
+        return code;
     }
 
     async setResetPasswordCode(email: string, code: string): Promise<void> {
