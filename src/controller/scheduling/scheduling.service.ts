@@ -12,7 +12,7 @@ import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import { Modality } from "../modality/entities/modality.entity"
-import { DateTime } from 'luxon';
+import { DateTime } from "luxon"
 
 @Injectable()
 export class SchedulingService {
@@ -80,10 +80,10 @@ export class SchedulingService {
                 HttpStatus.BAD_REQUEST
             )
         }
-       
-        const scheduledDateTime = new Date(scheduledDate);
-    const [hours, minutes] = timeSlot.split(":").map(Number);
-    scheduledDateTime.setHours(hours, minutes, 0, 0);
+
+        const scheduledDateTime = new Date(scheduledDate)
+        const [hours, minutes] = timeSlot.split(":").map(Number)
+        scheduledDateTime.setHours(hours, minutes, 0, 0)
 
         const isAvailable = await this.isTimeSlotAvailable(
             entrepreneurId,
@@ -168,89 +168,101 @@ export class SchedulingService {
         return await this.scheduleRepository.save(schedule)
     }
 
+    async isTimeAvailable(
+        entrepreneurId: number,
+        scheduledDate: Date
+    ): Promise<boolean> {
+        const scheduledAppointments = await this.findByEntrepreneurId(
+            entrepreneurId
+        )
 
-    async isTimeAvailable(entrepreneurId: number, scheduledDate: Date): Promise<boolean> {
-        const scheduledAppointments = await this.findByEntrepreneurId(entrepreneurId);
-        
-        const isTimeSlotTaken = scheduledAppointments.some(schedule => {
-            const existingScheduledDate = new Date(schedule.scheduledDate);
-            return existingScheduledDate.getTime() === scheduledDate.getTime();
-        });
-    
-        return !isTimeSlotTaken; 
+        const isTimeSlotTaken = scheduledAppointments.some((schedule) => {
+            const existingScheduledDate = new Date(schedule.scheduledDate)
+            return existingScheduledDate.getTime() === scheduledDate.getTime()
+        })
+
+        return !isTimeSlotTaken
     }
 
-    async getAvailableTimes(entrepreneurId: number, date: string): Promise<string[]> {
-        
-        const dateObj = DateTime.fromISO(date, { setZone: 'America/Sao_Paulo' }); 
-       
-    
-        const scheduledAppointments = await this.findByEntrepreneurId(entrepreneurId);
-        
-    
+    async getAvailableTimes(
+        entrepreneurId: number,
+        date: string
+    ): Promise<string[]> {
+        const dateObj = DateTime.fromISO(date, { setZone: "America/Sao_Paulo" })
+
+        const scheduledAppointments = await this.findByEntrepreneurId(
+            entrepreneurId
+        )
+
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
-        });
-    
+        })
+
         if (!entrepreneur) {
-            throw new Error("Entrepreneur not found");
+            throw new Error("Entrepreneur not found")
         }
-    
-        
+
         const operationHours = Array.isArray(entrepreneur.operation)
             ? entrepreneur.operation
-            : JSON.parse(entrepreneur.operation as unknown as string);
-    
-        
-        const dayOfWeek = dateObj.toFormat('cccc', { locale: 'pt-BR' }).trim().toLowerCase(); 
-        //console.log('Dia da semana:', dayOfWeek);
-    
-        const todayOperation = operationHours.find((op: any) => {
-            return op.day.trim().toLowerCase() === dayOfWeek && op.isActive; 
-        });
-    
-        console.log('Operação de hoje:', todayOperation);
-    
-        if (!todayOperation) {
-           // console.log('Nenhuma operação ativa para hoje.');
-            return [];
-        }
-    
-       
-        const workingHours = this.generateWorkingHours(todayOperation.openinHours, todayOperation.closingTime);
-       // console.log('Horários de funcionamento gerados:', workingHours);
-    
-       
-        const occupiedTimes = scheduledAppointments
-            .filter(schedule => {
-                const scheduledDate = DateTime.fromISO(schedule.scheduledDate);
-                return scheduledDate.toISODate() === dateObj.toISODate();
-            })
-            .map(schedule => DateTime.fromISO(schedule.scheduledDate).toFormat('HH:mm'));
-    
-        //console.log('Horários ocupados:', occupiedTimes);
-    
-      
-        const availableTimes = workingHours.filter(time => !occupiedTimes.includes(time));
-        //console.log('Horários disponíveis:', availableTimes);
-    
-        return availableTimes;
-    }
-    
-    
-    private generateWorkingHours(openingTime: string, closingTime: string): string[] {
-        const hours: string[] = [];
-        let currentTime = DateTime.fromFormat(openingTime, 'HH:mm');
-        const closingTimeObj = DateTime.fromFormat(closingTime, 'HH:mm');
-    
-        while (currentTime <= closingTimeObj) {
-            hours.push(currentTime.toFormat('HH:mm'));
-            currentTime = currentTime.plus({ minutes: 30 }); 
-        }
-    
-        return hours;
-    
-    }
-    
-}
+            : JSON.parse(entrepreneur.operation as unknown as string)
 
+        const dayOfWeek = dateObj
+            .toFormat("cccc", { locale: "pt-BR" })
+            .trim()
+            .toLowerCase()
+        //console.log('Dia da semana:', dayOfWeek);
+
+        const todayOperation = operationHours.find((op: any) => {
+            return op.day.trim().toLowerCase() === dayOfWeek && op.isActive
+        })
+
+        console.log("Operação de hoje:", todayOperation)
+
+        if (!todayOperation) {
+            // console.log('Nenhuma operação ativa para hoje.');
+            return []
+        }
+
+        const workingHours = this.generateWorkingHours(
+            todayOperation.openinHours,
+            todayOperation.closingTime
+        )
+
+        const occupiedTimes = scheduledAppointments
+            .filter((schedule) => {
+                const scheduledDate = DateTime.fromISO(schedule.scheduledDate.toISOString(), {
+                    zone: "utc"
+                });
+                console.log(scheduledDate);
+                return scheduledDate.toISODate() === dateObj.toISODate()
+            })
+            .map((schedule) =>
+                DateTime.fromISO(schedule.scheduledDate.toISOString()).toFormat("HH:mm")
+            )
+
+        console.log("Horários ocupados:", occupiedTimes)
+
+        const availableTimes = workingHours.filter(
+            (time) => !occupiedTimes.includes(time)
+        )
+        console.log("Horários disponíveis:", availableTimes)
+
+        return availableTimes
+    }
+
+    private generateWorkingHours(
+        openingTime: string,
+        closingTime: string
+    ): string[] {
+        const hours: string[] = []
+        let currentTime = DateTime.fromFormat(openingTime, "HH:mm")
+        const closingTimeObj = DateTime.fromFormat(closingTime, "HH:mm")
+
+        while (currentTime <= closingTimeObj) {
+            hours.push(currentTime.toFormat("HH:mm"))
+            currentTime = currentTime.plus({ minutes: 30 })
+        }
+
+        return hours
+    }
+}
