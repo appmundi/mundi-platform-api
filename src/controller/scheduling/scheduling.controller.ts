@@ -193,6 +193,7 @@ export class SchedulingController {
                 AgendaStatus.INIT,
                 AgendaStatus.STARTED,
                 AgendaStatus.CANCELED,
+                AgendaStatus.FEEDBACK,
                 AgendaStatus.FINISHED
             ].includes(newStatus)
         ) {
