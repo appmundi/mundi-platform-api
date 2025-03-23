@@ -139,6 +139,7 @@ export class SchedulingController {
                 const schedule = new Schedule()
                 schedule.id = scheduleResponse.id
                 schedule.scheduledDate = scheduleResponse.scheduledDate
+                schedule.status = scheduleResponse.status
 
                 const user = new User()
                 user.userId = scheduleResponse.user.userId

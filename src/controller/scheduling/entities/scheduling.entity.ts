@@ -13,6 +13,7 @@ export enum AgendaStatus {
     INIT = 'INIT',
     STARTED = 'STARTED',
     CANCELED = 'CANCELED',
+    FEEDBACK = 'FEEDBACK',
     FINISHED = 'FINISHED',
   }
 
