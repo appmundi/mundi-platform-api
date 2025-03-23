@@ -17,4 +17,7 @@ export class Avaliation {
 
     @ManyToOne(() => Entrepreneur, (entrepreneur) => entrepreneur.avaliation)
     entrepreneur: Entrepreneur
+
+    @Column()
+    userId: number
 }
