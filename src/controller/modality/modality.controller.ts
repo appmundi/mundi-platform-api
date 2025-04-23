@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Param, Put } from "@nestjs/common"
+import { Controller, Post, Body, UseGuards, Param, Put, Delete } from "@nestjs/common"
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
 import { ModalityService } from "./modality.service"
 import { HttpException, HttpStatus } from "@nestjs/common"
@@ -45,6 +45,20 @@ export class ModalityController {
         } catch (error) {
             
            console.log( "e", error)
+        }
+    }
+
+    @Delete(":id")
+    async deleteModality(@Param("id") id: number) {
+        try {
+            await this.modalityService.deleteModality(id);
+            return { message: "Modalidade deletada com sucesso" };
+        } catch (error) {
+            console.log("Modality controller > delete error: ", error);
+            throw new HttpException(
+                "Erro ao deletar modalidade",
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
     }
 

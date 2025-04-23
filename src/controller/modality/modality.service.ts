@@ -36,4 +36,15 @@ export class ModalityService {
     async updateModality(modality: Modality): Promise<UpdateResult> {
         return await this.modalityRepository.update(modality.id, modality)
     }
+
+    async deleteModality(id: number): Promise<void> {
+        try {
+            const result = await this.modalityRepository.delete(id);
+            if (result.affected === 0) {
+                throw new Error('Modalidade não encontrada');
+            }
+        } catch (error) {
+            throw new Error(`Falha ao deletar modalidade: ${error.message}`);
+        }
+    }
 }
