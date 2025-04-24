@@ -6,7 +6,10 @@ import {
     Param,
     NotFoundException,
     Put,
-    Get
+    Get,
+    Delete,
+    HttpException,
+    HttpStatus
 } from "@nestjs/common"
 import { WorkService } from "./work.service"
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
@@ -76,6 +79,23 @@ export class WorkController {
                 throw new NotFoundException(error.message)
             }
            console.log( "e", error)
+        }
+    }
+
+    @Delete(":id")
+    async deleteWork(@Param("id") id: number) {
+        try {
+            await this.modalityService.deleteModalitiesByWorkId(id);
+            
+            await this.workService.deleteWork(id);
+            
+            return { message: "Work e modalities associadas deletadas com sucesso" };
+        } catch (error) {
+            console.log("Work controller > delete error: ", error);
+            throw new HttpException(
+                "Erro ao deletar work e modalities",
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
     }
 }

@@ -47,4 +47,8 @@ export class ModalityService {
             throw new Error(`Falha ao deletar modalidade: ${error.message}`);
         }
     }
+
+    async deleteModalitiesByWorkId(workId: number): Promise<void> {
+    await this.modalityRepository.delete({ work: { id: workId } });
+}
 }

@@ -47,4 +47,15 @@ export class WorkService {
         return await this.workRepository.update(work.id, work)
     }
 
+    async deleteWork(id: number): Promise<void> {
+        try {
+            const result = await this.workRepository.delete(id);
+            if (result.affected === 0) {
+                throw new Error('Work não encontrada');
+            }
+        } catch (error) {
+            throw new Error(`Falha ao deletar modalidade: ${error.message}`);
+        }
+    }
+
 }
