@@ -90,4 +90,7 @@ export class Entrepreneur {
 
     @OneToMany(() => Image, (image) => image.entrepreneur)
     images: Image[]
+
+    @Column({type: "text", nullable: true})
+    profileImage: string;
 }

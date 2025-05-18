@@ -4,6 +4,7 @@ import { Repository } from "typeorm"
 import { Image } from "./entities/upload.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import * as path from "path"
+import { ImageDTO } from "src/dto/image.dto"
 
 @Injectable()
 export class ImagesService {
@@ -18,6 +19,26 @@ export class ImagesService {
         image: Express.Multer.File,
         entrepreneurId: number
     ): Promise<{ base64: string }> {
+        const storedImage = await this.storeImage(image);
+    
+        const entrepreneur = await this.entrepreneurRepository.findOne({
+            where: { entrepreneurId }
+        });
+        if (!entrepreneur) {
+            throw new Error("Entrepreneur not found");
+        }
+    
+        const imageEntity = new Image();
+        imageEntity.filename = storedImage.name; 
+        imageEntity.base64 = storedImage.bytes;
+        imageEntity.entrepreneur = entrepreneur;
+    
+        await this.imageRepository.save(imageEntity);
+    
+        return { base64: `data:image/jpeg;base64,${storedImage.bytes}` }; 
+    }
+
+    async storeImage(image: Express.Multer.File): Promise<ImageDTO> {
         const fileName = `${Date.now()}-${image.originalname}`;
         const uploadFolder = path.resolve(
             __dirname,
@@ -30,22 +51,11 @@ export class ImagesService {
         fs.writeFileSync(filePath, image.buffer);
     
         const base64Image = image.buffer.toString("base64");
-    
-        const entrepreneur = await this.entrepreneurRepository.findOne({
-            where: { entrepreneurId }
-        });
-        if (!entrepreneur) {
-            throw new Error("Entrepreneur not found");
+
+        return {
+            bytes: base64Image,
+            name: fileName,
         }
-    
-        const imageEntity = new Image();
-        imageEntity.filename = fileName; 
-        imageEntity.base64 = base64Image;
-        imageEntity.entrepreneur = entrepreneur;
-    
-        await this.imageRepository.save(imageEntity);
-    
-        return { base64: `data:image/jpeg;base64,${base64Image}` }; 
     }
 
     async getImagesByEntrepreneurId(entrepreneurId: number): Promise<Image[]> {
@@ -67,5 +77,19 @@ export class ImagesService {
         fs.unlinkSync(image.filename)
 
         await this.imageRepository.remove(image)
+    }
+
+    async uploadProfileImage(image: Express.Multer.File, entrepreneurId: number): Promise<{ base64: string }> {
+        const entrepreneur = await this.entrepreneurRepository.findOne({ where: { entrepreneurId } });
+        if(!entrepreneur) {
+            throw new Error('Entrepreneur not found')
+        }
+
+        const storedImage = await this.storeImage(image);
+        entrepreneur.profileImage = storedImage.bytes;
+
+        return {
+            base64: `data:image/jpeg;base64,${storedImage.bytes}`,
+        }
     }
 }
