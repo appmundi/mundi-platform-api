@@ -241,7 +241,8 @@ export class SchedulingService {
             )
 
         console.log("Horários ocupados:", occupiedTimes)
-
+        console.log(workingHours);
+        console.log(occupiedTimes);
         const availableTimes = workingHours.filter(
             (time) => !occupiedTimes.includes(time)
         )
@@ -255,8 +256,8 @@ export class SchedulingService {
         closingTime: string
     ): string[] {
         const hours: string[] = []
-        let currentTime = DateTime.fromFormat(openingTime, "HH:mm")
-        const closingTimeObj = DateTime.fromFormat(closingTime, "HH:mm")
+        let currentTime = DateTime.fromFormat(openingTime.padStart(5, '0'), "HH:mm")
+        const closingTimeObj = DateTime.fromFormat(closingTime.padStart(5, '0'), "HH:mm")
 
         while (currentTime <= closingTimeObj) {
             hours.push(currentTime.toFormat("HH:mm"))

@@ -127,12 +127,12 @@ export class SchedulingController {
         )
         const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
 
-        if (!filteredSchedules || filteredSchedules.length === 0) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
-                HttpStatus.BAD_REQUEST
-            );
-        }
+        // if (!filteredSchedules || filteredSchedules.length === 0) {
+        //     throw new HttpException(
+        //         { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
+        //         HttpStatus.BAD_REQUEST
+        //     );
+        // }
 
         const mappedSchedules: Schedule[] = filteredSchedules.map(
             (scheduleResponse) => {
@@ -235,12 +235,12 @@ export class SchedulingController {
 
         const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
 
-        if (!filteredSchedules || filteredSchedules.length === 0) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
-                HttpStatus.BAD_REQUEST
-            );
-        }
+        // if (!filteredSchedules || filteredSchedules.length === 0) {
+        //     throw new HttpException(
+        //         { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
+        //         HttpStatus.BAD_REQUEST
+        //     );
+        // }
 
         const mappedSchedules: Schedule[] = filteredSchedules.map(
             (scheduleResponse) => {

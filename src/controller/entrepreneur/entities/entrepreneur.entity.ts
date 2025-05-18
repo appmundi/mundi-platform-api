@@ -92,5 +92,5 @@ export class Entrepreneur {
     images: Image[]
 
     @Column({type: "text", nullable: true})
-    profileImage: string;
+    profileImage: string | null;
 }

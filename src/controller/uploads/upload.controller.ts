@@ -64,8 +64,18 @@ async getImagesByEntrepreneurId(
         @Body() body: { entrepreneurId: number }
     ) {
         const entrepreneurId = body.entrepreneurId
-        const imagePath = this.imagesService.uploadProfileImage(image, entrepreneurId);
+        const imagePath = await this.imagesService.uploadProfileImage(image, entrepreneurId);
 
         return { success: true, imagePath }
+    }
+
+    @Delete("profile")
+    async deleteProfileImage(
+        @Body() body: { entrepreneurId: number }
+    ) {
+        const entrepreneurId = body.entrepreneurId
+        await this.imagesService.deleteProfileImage(entrepreneurId);
+
+        return { success: true }
     }
 }

@@ -87,9 +87,24 @@ export class ImagesService {
 
         const storedImage = await this.storeImage(image);
         entrepreneur.profileImage = storedImage.bytes;
+        await this.entrepreneurRepository.save(entrepreneur)
 
         return {
             base64: `data:image/jpeg;base64,${storedImage.bytes}`,
         }
+    }
+
+    async deleteProfileImage(entrepreneurId: number): Promise<void> {
+        const entrepreneur = await this.entrepreneurRepository.findOne({ 
+            where: { entrepreneurId },
+            loadEagerRelations: false 
+        });
+        
+        if (!entrepreneur) {
+            throw new Error('Empreendedor não encontrado');
+        }
+    
+        entrepreneur.profileImage = null;
+        await this.entrepreneurRepository.save(entrepreneur, { reload: false });
     }
 }
