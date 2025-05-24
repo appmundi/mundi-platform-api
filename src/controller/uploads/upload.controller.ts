@@ -14,12 +14,8 @@ import {
 } from "@nestjs/common"
 import { FileFieldsInterceptor, FileInterceptor } from "@nestjs/platform-express"
 import { ImagesService } from "./upload.service"
-import * as fs from "fs"
 import * as path from "path"
-import { promisify } from "util"
 import { Readable } from "typeorm/platform/PlatformTools"
-
-const existsAsync = promisify(fs.exists)
 
 @Controller("images")
 export class ImagesController {
@@ -94,25 +90,21 @@ export class ImagesController {
     ): Promise<StreamableFile> {
         try {
             const id = Number.parseInt(imageId);
-            const image = await this.imagesService.findImageByID(id); // Supondo que `findById` retorne { base64: string, fileName: string }
+            const image = await this.imagesService.findImageByID(id);
 
             if (!image) {
                 throw new NotFoundException("Imagem não encontrada");
             }
 
-            // 2. Extrai a extensão do arquivo para definir o Content-Type
             const contentType = this.getContentType(image.fileName);
 
-            // 3. Converte o base64 em Buffer
             const base64Data = image.base64.replace(/^data:image\/\w+;base64,/, "");
             const imageBuffer = Buffer.from(base64Data, "base64");
 
-            // 4. Cria um stream a partir do Buffer
             const readableStream = new Readable();
             readableStream.push(imageBuffer);
-            readableStream.push(null); // Indica o fim do stream
+            readableStream.push(null); 
 
-            // 5. Retorna como StreamableFile
             return new StreamableFile(readableStream, {
                 type: contentType,
             });

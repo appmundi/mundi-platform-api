@@ -5,7 +5,7 @@ import { Image } from "./entities/upload.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import * as path from "path"
 import { ImageDTO } from "src/dto/image.dto"
-import sharp from "sharp"
+import * as sharp from 'sharp';
 
 @Injectable()
 export class ImagesService {
