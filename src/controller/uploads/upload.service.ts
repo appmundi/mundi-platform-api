@@ -1,4 +1,4 @@
-import { Injectable, Inject } from "@nestjs/common"
+import { Injectable, Inject, NotFoundException } from "@nestjs/common"
 import * as fs from "fs"
 import { Repository } from "typeorm"
 import { Image } from "./entities/upload.entity"
@@ -46,7 +46,7 @@ export class ImagesService {
             }
         });
 
-        if(!file) {
+        if (!file) {
             return null;
         }
 
@@ -70,7 +70,7 @@ export class ImagesService {
         try {
             const compressedBuffer = await sharp(image.buffer)
                 .jpeg({
-                    quality: 80,  
+                    quality: 80,
                     mozjpeg: true,
                 })
                 .toBuffer();
@@ -126,30 +126,27 @@ export class ImagesService {
     }
 
     async deleteProfileImage(entrepreneurId: number): Promise<void> {
-        const entrepreneur = await this.entrepreneurRepository.findOne({
-            where: { entrepreneurId },
-            loadEagerRelations: false
-        });
+        const result = await this.entrepreneurRepository.update(
+            { entrepreneurId: entrepreneurId },
+            { profileImage: null }
+        );
 
-        if (!entrepreneur) {
-            throw new Error('Empreendedor não encontrado');
+        if (result.affected === 0) {
+            throw new NotFoundException('Empreendedor não encontrado');
         }
-
-        entrepreneur.profileImage = null;
-        await this.entrepreneurRepository.save(entrepreneur, { reload: false });
     }
 
-    async getEntrepreneurProfileImage(entrepreneurID: number): Promise<{base64: string} | null> {
+    async getEntrepreneurProfileImage(entrepreneurID: number): Promise<{ base64: string } | null> {
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: {
                 entrepreneurId: entrepreneurID,
-            }, 
+            },
             select: {
                 profileImage: true,
             }
         });
 
-        if(!entrepreneur.profileImage) {
+        if (!entrepreneur.profileImage) {
             return null;
         }
 
