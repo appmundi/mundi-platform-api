@@ -5,7 +5,7 @@ import { Image } from "./entities/upload.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import * as path from "path"
 import { ImageDTO } from "src/dto/image.dto"
-import * as sharp from 'sharp';
+import * as sharp from "sharp"
 
 @Injectable()
 export class ImagesService {
@@ -14,86 +14,88 @@ export class ImagesService {
         private imageRepository: Repository<Image>,
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>
-    ) { }
+    ) {}
 
     async uploadImage(
         image: Express.Multer.File,
         entrepreneurId: number
     ): Promise<{ base64: string }> {
-        const storedImage = await this.storeImage(image);
+        const storedImage = await this.storeImage(image)
 
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
-        });
+        })
         if (!entrepreneur) {
-            throw new Error("Entrepreneur not found");
+            throw new Error("Entrepreneur not found")
         }
 
-        const imageEntity = new Image();
-        imageEntity.filename = storedImage.name;
-        imageEntity.base64 = storedImage.bytes;
-        imageEntity.entrepreneur = entrepreneur;
+        const imageEntity = new Image()
+        imageEntity.filename = storedImage.name
+        imageEntity.base64 = storedImage.bytes
+        imageEntity.entrepreneur = entrepreneur
 
-        await this.imageRepository.save(imageEntity);
+        await this.imageRepository.save(imageEntity)
 
-        return { base64: `data:image/jpeg;base64,${storedImage.bytes}` };
+        return { base64: `data:image/jpeg;base64,${storedImage.bytes}` }
     }
 
-    async findImageByID(id: number): Promise<{ base64: string, fileName: string } | null> {
+    async findImageByID(
+        id: number
+    ): Promise<{ base64: string; fileName: string } | null> {
         const file = await this.imageRepository.findOne({
             where: {
-                id: id,
+                id: id
             }
-        });
+        })
 
         if (!file) {
-            return null;
+            return null
         }
 
         return {
             base64: file.base64,
-            fileName: file.filename,
-        };
+            fileName: file.filename
+        }
     }
 
     async storeImage(image: Express.Multer.File): Promise<ImageDTO> {
-        const fileName = `${Date.now()}-${image.originalname}`;
+        const fileName = `${Date.now()}-${image.originalname}`
         const uploadFolder = path.resolve(
             __dirname,
             "../../../src/controller/uploads/images"
-        );
+        )
 
-        const filePath = path.join(uploadFolder, fileName);
+        const filePath = path.join(uploadFolder, fileName)
 
-        fs.mkdirSync(uploadFolder, { recursive: true });
+        fs.mkdirSync(uploadFolder, { recursive: true })
 
         try {
             const compressedBuffer = await sharp(image.buffer)
                 .jpeg({
                     quality: 80,
-                    mozjpeg: true,
+                    mozjpeg: true
                 })
-                .toBuffer();
+                .toBuffer()
 
-            fs.writeFileSync(filePath, compressedBuffer);
+            fs.writeFileSync(filePath, compressedBuffer)
 
-            const base64Image = compressedBuffer.toString("base64");
+            const base64Image = compressedBuffer.toString("base64")
 
             return {
                 bytes: base64Image,
-                name: fileName,
-            };
+                name: fileName
+            }
         } catch (error) {
-            console.error('Erro ao processar imagem:', error);
-            throw error;
+            console.error("Erro ao processar imagem:", error)
+            throw error
         }
     }
 
     async getImagesByEntrepreneurId(entrepreneurId: number): Promise<Image[]> {
         return this.imageRepository.find({
             where: { entrepreneur: { entrepreneurId: entrepreneurId } }, // Ajusta a chave estrangeira
-            relations: ['entrepreneur'], // Inclui a relação, se necessário
-        });
+            relations: ["entrepreneur"] // Inclui a relação, se necessário
+        })
     }
 
     async deleteImage(id: number): Promise<void> {
@@ -110,48 +112,62 @@ export class ImagesService {
         await this.imageRepository.remove(image)
     }
 
-    async uploadProfileImage(image: Express.Multer.File, entrepreneurId: number): Promise<{ base64: string }> {
-        const entrepreneur = await this.entrepreneurRepository.findOne({ where: { entrepreneurId } });
+    async uploadProfileImage(
+        image: Express.Multer.File,
+        entrepreneurId: number
+    ): Promise<{ base64: string }> {
+        const entrepreneur = await this.entrepreneurRepository.findOne({
+            where: { entrepreneurId }
+        })
         if (!entrepreneur) {
-            throw new Error('Entrepreneur not found')
+            throw new Error("Entrepreneur not found")
         }
 
-        const storedImage = await this.storeImage(image);
-        entrepreneur.profileImage = storedImage.bytes;
+        const storedImage = await this.storeImage(image)
+        entrepreneur.profileImage = storedImage.bytes
         await this.entrepreneurRepository.save(entrepreneur)
 
         return {
-            base64: `data:image/jpeg;base64,${storedImage.bytes}`,
+            base64: `data:image/jpeg;base64,${storedImage.bytes}`
         }
     }
 
     async deleteProfileImage(entrepreneurId: number): Promise<void> {
-        const result = await this.entrepreneurRepository.update(
-            { entrepreneurId: entrepreneurId },
-            { profileImage: null }
-        );
+        await this.entrepreneurRepository.query(
+            `UPDATE entrepreneur SET profileImage = NULL WHERE entrepreneurId = ?`,
+            [entrepreneurId]
+        )
 
-        if (result.affected === 0) {
-            throw new NotFoundException('Empreendedor não encontrado');
+        const entrepreneur = await this.entrepreneurRepository.findOneBy({
+            entrepreneurId
+        })
+        if (!entrepreneur) {
+            throw new NotFoundException("Empreendedor não encontrado")
+        }
+        const updated = entrepreneur.profileImage == null;
+        if (!updated) {
+            throw new Error('Erro ao atualizar imagem');
         }
     }
 
-    async getEntrepreneurProfileImage(entrepreneurID: number): Promise<{ base64: string } | null> {
+    async getEntrepreneurProfileImage(
+        entrepreneurID: number
+    ): Promise<{ base64: string } | null> {
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: {
-                entrepreneurId: entrepreneurID,
+                entrepreneurId: entrepreneurID
             },
             select: {
-                profileImage: true,
+                profileImage: true
             }
-        });
+        })
 
         if (!entrepreneur.profileImage) {
-            return null;
+            return null
         }
 
         return {
-            base64: entrepreneur.profileImage,
-        };
+            base64: entrepreneur.profileImage
+        }
     }
 }

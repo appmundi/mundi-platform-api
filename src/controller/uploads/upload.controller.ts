@@ -73,12 +73,12 @@ export class ImagesController {
         return { success: true, imagePath }
     }
 
-    @Delete("profile")
+    @Delete("profile/:entrepreneurId")
     async deleteProfileImage(
-        @Body() body: { entrepreneurId: number }
+        @Param("entrepreneurId") entrepreneurId: string
     ) {
-        const entrepreneurId = body.entrepreneurId
-        await this.imagesService.deleteProfileImage(entrepreneurId);
+        const id = Number.parseInt(entrepreneurId);
+        await this.imagesService.deleteProfileImage(id);
 
         return { success: true }
     }
@@ -100,7 +100,6 @@ export class ImagesController {
     }
 
     @Get("profile/:entrepreneurID")
-    @Header("Cache-Control", "public, max-age=86400")
     async profileImage(
         @Param("entrepreneurID") entrepreneurID: string
     ): Promise<StreamableFile | null> {
