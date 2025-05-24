@@ -91,6 +91,6 @@ export class Entrepreneur {
     @OneToMany(() => Image, (image) => image.entrepreneur)
     images: Image[]
 
-    @Column({type: "text", nullable: true})
+    @Column({type: "text", nullable: true, select: false})
     profileImage: string | null;
 }

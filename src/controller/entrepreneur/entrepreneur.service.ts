@@ -32,7 +32,7 @@ export class EntrepreneurService {
             ],
             loadRelationIds: {
                 relations: ["images"]
-            }
+            },
         })
     }
 

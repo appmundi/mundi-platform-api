@@ -83,31 +83,36 @@ export class ImagesController {
         return { success: true }
     }
 
-    @Get(":imageId") // Agora recebe um ID em vez do nome do arquivo
+    @Get(":imageId")
     @Header("Cache-Control", "public, max-age=86400")
     async serveImage(
         @Param("imageId") imageId: string
     ): Promise<StreamableFile> {
+        const id = Number.parseInt(imageId);
+        const image = await this.imagesService.findImageByID(id);
+
+        if (!image) {
+            throw new NotFoundException("Imagem não encontrada");
+        }
+
+        const contentType = this.getContentType(image.fileName);
+        return this.createStreamableFile(image.base64, contentType);
+    }
+
+    @Get("profile/:entrepreneurID")
+    @Header("Cache-Control", "public, max-age=86400")
+    async profileImage(
+        @Param("entrepreneurID") entrepreneurID: string
+    ): Promise<StreamableFile | null> {
         try {
-            const id = Number.parseInt(imageId);
-            const image = await this.imagesService.findImageByID(id);
+            const id = Number.parseInt(entrepreneurID);
+            const image = await this.imagesService.getEntrepreneurProfileImage(id);
 
             if (!image) {
-                throw new NotFoundException("Imagem não encontrada");
+                return null;
             }
 
-            const contentType = this.getContentType(image.fileName);
-
-            const base64Data = image.base64.replace(/^data:image\/\w+;base64,/, "");
-            const imageBuffer = Buffer.from(base64Data, "base64");
-
-            const readableStream = new Readable();
-            readableStream.push(imageBuffer);
-            readableStream.push(null); 
-
-            return new StreamableFile(readableStream, {
-                type: contentType,
-            });
+            return this.createStreamableFile(image.base64, 'image/jpeg');
         } catch (error) {
             if (error instanceof NotFoundException) {
                 throw error;
@@ -116,7 +121,19 @@ export class ImagesController {
         }
     }
 
-    // Mantém o mesmo getContentType (para extrair a extensão do fileName)
+    private createStreamableFile(base64Data: string, contentType: string): StreamableFile {
+        const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+        const imageBuffer = Buffer.from(cleanBase64, "base64");
+
+        const readableStream = new Readable();
+        readableStream.push(imageBuffer);
+        readableStream.push(null);
+
+        return new StreamableFile(readableStream, {
+            type: contentType,
+        });
+    }
+
     private getContentType(filename: string): string {
         const extension = filename.toLowerCase().split(".").pop();
         const types = {

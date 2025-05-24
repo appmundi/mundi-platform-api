@@ -39,12 +39,16 @@ export class ImagesService {
         return { base64: `data:image/jpeg;base64,${storedImage.bytes}` };
     }
 
-    async findImageByID(id: number): Promise<{ base64: string, fileName: string }> {
+    async findImageByID(id: number): Promise<{ base64: string, fileName: string } | null> {
         const file = await this.imageRepository.findOne({
             where: {
                 id: id,
             }
         });
+
+        if(!file) {
+            return null;
+        }
 
         return {
             base64: file.base64,
@@ -133,5 +137,24 @@ export class ImagesService {
 
         entrepreneur.profileImage = null;
         await this.entrepreneurRepository.save(entrepreneur, { reload: false });
+    }
+
+    async getEntrepreneurProfileImage(entrepreneurID: number): Promise<{base64: string} | null> {
+        const entrepreneur = await this.entrepreneurRepository.findOne({
+            where: {
+                entrepreneurId: entrepreneurID,
+            }, 
+            select: {
+                profileImage: true,
+            }
+        });
+
+        if(!entrepreneur.profileImage) {
+            return null;
+        }
+
+        return {
+            base64: entrepreneur.profileImage,
+        };
     }
 }
