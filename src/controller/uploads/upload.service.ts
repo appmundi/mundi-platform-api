@@ -107,8 +107,6 @@ export class ImagesService {
             throw new Error(`Imagem com ID ${id} não encontrada.`)
         }
 
-        fs.unlinkSync(image.filename)
-
         await this.imageRepository.remove(image)
     }
 
