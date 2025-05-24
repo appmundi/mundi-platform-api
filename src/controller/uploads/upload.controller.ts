@@ -3,19 +3,27 @@ import {
     Controller,
     Delete,
     Get,
+    Header,
+    NotFoundException,
     Param,
     Post,
+    StreamableFile,
     UploadedFile,
     UploadedFiles,
     UseInterceptors
 } from "@nestjs/common"
 import { FileFieldsInterceptor, FileInterceptor } from "@nestjs/platform-express"
 import { ImagesService } from "./upload.service"
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs"
+import * as path from "path"
+import { promisify } from "util"
+import { Readable } from "typeorm/platform/PlatformTools"
+
+const existsAsync = promisify(fs.exists)
 
 @Controller("images")
 export class ImagesController {
+    private readonly uploadsDir = path.join(process.cwd(), "src", "controller", "uploads", "images")
     constructor(private readonly imagesService: ImagesService) { }
 
     @Post("upload")
@@ -39,16 +47,16 @@ export class ImagesController {
     }
 
     @Get("byEntrepreneur/:entrepreneurId")
-async getImagesByEntrepreneurId(
-    @Param("entrepreneurId") entrepreneurId: number
-): Promise<{ id: number; base64: string }[]> {
-    const images = await this.imagesService.getImagesByEntrepreneurId(entrepreneurId);
+    async getImagesByEntrepreneurId(
+        @Param("entrepreneurId") entrepreneurId: number
+    ): Promise<{ id: number; base64: string }[]> {
+        const images = await this.imagesService.getImagesByEntrepreneurId(entrepreneurId);
 
-    return images.map(image => ({
-        id: image.id,
-        base64: `data:image/jpeg;base64,${image.base64}`, 
-    }));
-}
+        return images.map(image => ({
+            id: image.id,
+            base64: `data:image/jpeg;base64,${image.base64}`,
+        }));
+    }
 
 
     @Delete("delete/:id")
@@ -77,5 +85,56 @@ async getImagesByEntrepreneurId(
         await this.imagesService.deleteProfileImage(entrepreneurId);
 
         return { success: true }
+    }
+
+    @Get(":imageId") // Agora recebe um ID em vez do nome do arquivo
+    @Header("Cache-Control", "public, max-age=86400")
+    async serveImage(
+        @Param("imageId") imageId: string
+    ): Promise<StreamableFile> {
+        try {
+            const id = Number.parseInt(imageId);
+            const image = await this.imagesService.findImageByID(id); // Supondo que `findById` retorne { base64: string, fileName: string }
+
+            if (!image) {
+                throw new NotFoundException("Imagem não encontrada");
+            }
+
+            // 2. Extrai a extensão do arquivo para definir o Content-Type
+            const contentType = this.getContentType(image.fileName);
+
+            // 3. Converte o base64 em Buffer
+            const base64Data = image.base64.replace(/^data:image\/\w+;base64,/, "");
+            const imageBuffer = Buffer.from(base64Data, "base64");
+
+            // 4. Cria um stream a partir do Buffer
+            const readableStream = new Readable();
+            readableStream.push(imageBuffer);
+            readableStream.push(null); // Indica o fim do stream
+
+            // 5. Retorna como StreamableFile
+            return new StreamableFile(readableStream, {
+                type: contentType,
+            });
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new NotFoundException("Erro ao processar imagem");
+        }
+    }
+
+    // Mantém o mesmo getContentType (para extrair a extensão do fileName)
+    private getContentType(filename: string): string {
+        const extension = filename.toLowerCase().split(".").pop();
+        const types = {
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            png: "image/png",
+            gif: "image/gif",
+            webp: "image/webp",
+            svg: "image/svg+xml",
+        };
+        return types[extension] || "application/octet-stream";
     }
 }

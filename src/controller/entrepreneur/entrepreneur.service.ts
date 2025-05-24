@@ -20,7 +20,7 @@ export class EntrepreneurService {
     constructor(
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>
-    ) {}
+    ) { }
 
     async findAll(): Promise<Entrepreneur[]> {
         return this.entrepreneurRepository.find({
@@ -28,9 +28,11 @@ export class EntrepreneurService {
                 "category",
                 "avaliation",
                 "work",
-                "images",
                 "schedulling"
-            ]
+            ],
+            loadRelationIds: {
+                relations: ["images"]
+            }
         })
     }
 

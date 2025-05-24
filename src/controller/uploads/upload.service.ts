@@ -13,29 +13,42 @@ export class ImagesService {
         private imageRepository: Repository<Image>,
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>
-    ) {}
+    ) { }
 
     async uploadImage(
         image: Express.Multer.File,
         entrepreneurId: number
     ): Promise<{ base64: string }> {
         const storedImage = await this.storeImage(image);
-    
+
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
         });
         if (!entrepreneur) {
             throw new Error("Entrepreneur not found");
         }
-    
+
         const imageEntity = new Image();
-        imageEntity.filename = storedImage.name; 
+        imageEntity.filename = storedImage.name;
         imageEntity.base64 = storedImage.bytes;
         imageEntity.entrepreneur = entrepreneur;
-    
+
         await this.imageRepository.save(imageEntity);
-    
-        return { base64: `data:image/jpeg;base64,${storedImage.bytes}` }; 
+
+        return { base64: `data:image/jpeg;base64,${storedImage.bytes}` };
+    }
+
+    async findImageByID(id: number): Promise<{ base64: string, fileName: string }> {
+        const file = await this.imageRepository.findOne({
+            where: {
+                id: id,
+            }
+        });
+
+        return {
+            base64: file.base64,
+            fileName: file.filename,
+        };
     }
 
     async storeImage(image: Express.Multer.File): Promise<ImageDTO> {
@@ -44,12 +57,12 @@ export class ImagesService {
             __dirname,
             "../../../src/controller/uploads/images"
         );
-    
+
         const filePath = path.join(uploadFolder, fileName);
-    
-        fs.mkdirSync(uploadFolder, { recursive: true }); 
+
+        fs.mkdirSync(uploadFolder, { recursive: true });
         fs.writeFileSync(filePath, image.buffer);
-    
+
         const base64Image = image.buffer.toString("base64");
 
         return {
@@ -81,7 +94,7 @@ export class ImagesService {
 
     async uploadProfileImage(image: Express.Multer.File, entrepreneurId: number): Promise<{ base64: string }> {
         const entrepreneur = await this.entrepreneurRepository.findOne({ where: { entrepreneurId } });
-        if(!entrepreneur) {
+        if (!entrepreneur) {
             throw new Error('Entrepreneur not found')
         }
 
@@ -95,15 +108,15 @@ export class ImagesService {
     }
 
     async deleteProfileImage(entrepreneurId: number): Promise<void> {
-        const entrepreneur = await this.entrepreneurRepository.findOne({ 
+        const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId },
-            loadEagerRelations: false 
+            loadEagerRelations: false
         });
-        
+
         if (!entrepreneur) {
             throw new Error('Empreendedor não encontrado');
         }
-    
+
         entrepreneur.profileImage = null;
         await this.entrepreneurRepository.save(entrepreneur, { reload: false });
     }
