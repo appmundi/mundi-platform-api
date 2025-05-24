@@ -5,6 +5,7 @@ import { Image } from "./entities/upload.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import * as path from "path"
 import { ImageDTO } from "src/dto/image.dto"
+import sharp from "sharp"
 
 @Injectable()
 export class ImagesService {
@@ -61,13 +62,26 @@ export class ImagesService {
         const filePath = path.join(uploadFolder, fileName);
 
         fs.mkdirSync(uploadFolder, { recursive: true });
-        fs.writeFileSync(filePath, image.buffer);
 
-        const base64Image = image.buffer.toString("base64");
+        try {
+            const compressedBuffer = await sharp(image.buffer)
+                .jpeg({
+                    quality: 80,  
+                    mozjpeg: true,
+                })
+                .toBuffer();
 
-        return {
-            bytes: base64Image,
-            name: fileName,
+            fs.writeFileSync(filePath, compressedBuffer);
+
+            const base64Image = compressedBuffer.toString("base64");
+
+            return {
+                bytes: base64Image,
+                name: fileName,
+            };
+        } catch (error) {
+            console.error('Erro ao processar imagem:', error);
+            throw error;
         }
     }
 
