@@ -188,7 +188,9 @@ export class SchedulingService {
         entrepreneurId: number,
         date: string
     ): Promise<string[]> {
-        const dateObj = DateTime.fromISO(date, { setZone: "America/Sao_Paulo" })
+        const dateObj: DateTime = DateTime.fromISO(date, {
+            setZone: "America/Sao_Paulo"
+        })
 
         const scheduledAppointments = await this.findByEntrepreneurId(
             entrepreneurId
@@ -210,16 +212,12 @@ export class SchedulingService {
             .toFormat("cccc", { locale: "pt-BR" })
             .trim()
             .toLowerCase()
-        //console.log('Dia da semana:', dayOfWeek);
 
         const todayOperation = operationHours.find((op: any) => {
             return op.day.trim().toLowerCase() === dayOfWeek && op.isActive
         })
 
-        console.log("Operação de hoje:", todayOperation)
-
         if (!todayOperation) {
-            // console.log('Nenhuma operação ativa para hoje.');
             return []
         }
 
@@ -230,24 +228,32 @@ export class SchedulingService {
 
         const occupiedTimes = scheduledAppointments
             .filter((schedule) => {
-                const scheduledDate = DateTime.fromISO(schedule.scheduledDate.toISOString(), {
-                    zone: "utc"
-                });
-                console.log(scheduledDate);
+                const scheduledDate = DateTime.fromISO(
+                    schedule.scheduledDate.toISOString(),
+                    {
+                        zone: "utc"
+                    }
+                )
                 return scheduledDate.toISODate() === dateObj.toISODate()
             })
             .map((schedule) =>
-                DateTime.fromISO(schedule.scheduledDate.toISOString()).toFormat("HH:mm")
+                DateTime.fromISO(schedule.scheduledDate.toISOString()).toFormat(
+                    "HH:mm"
+                )
             )
 
-        console.log("Horários ocupados:", occupiedTimes)
-        console.log(workingHours);
-        console.log(occupiedTimes);
-        const availableTimes = workingHours.filter(
+        let availableTimes = workingHours.filter(
             (time) => !occupiedTimes.includes(time)
         )
-        console.log("Horários disponíveis:", availableTimes)
 
+        const now = DateTime.now().setZone("America/Sao_Paulo")
+        if (dateObj.toISODate() === now.toISODate()) {
+            availableTimes = availableTimes.filter((time) => {
+                const [hour, minute] = time.split(":").map(Number)
+                const timeObj = dateObj.set({ hour, minute })
+                return timeObj > now
+            })
+        }
         return availableTimes
     }
 
@@ -256,8 +262,14 @@ export class SchedulingService {
         closingTime: string
     ): string[] {
         const hours: string[] = []
-        let currentTime = DateTime.fromFormat(openingTime.padStart(5, '0'), "HH:mm")
-        const closingTimeObj = DateTime.fromFormat(closingTime.padStart(5, '0'), "HH:mm")
+        let currentTime = DateTime.fromFormat(
+            openingTime.padStart(5, "0"),
+            "HH:mm"
+        )
+        const closingTimeObj = DateTime.fromFormat(
+            closingTime.padStart(5, "0"),
+            "HH:mm"
+        )
 
         while (currentTime <= closingTimeObj) {
             hours.push(currentTime.toFormat("HH:mm"))
