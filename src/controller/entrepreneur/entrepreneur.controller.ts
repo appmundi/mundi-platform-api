@@ -15,7 +15,8 @@ import {
     UnauthorizedException,
     Inject,
     UseInterceptors,
-    UploadedFile
+    UploadedFile,
+    Query
 } from "@nestjs/common"
 import { EntrepreneurService } from "./entrepreneur.service"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
@@ -69,9 +70,8 @@ export class EntrepreneurController {
     }
 
     @Get("searchAll")
-    async findAll(): Promise<Entrepreneur[]> {
-        console.log("trying to retrive all Entrepreneurs")
-        return this.entrepreneurService.findAll()
+    async findAll(@Query("query") query?: string | undefined): Promise<Entrepreneur[]> {
+        return this.entrepreneurService.findAll(query)
     }
 
     @Get("search/:id")

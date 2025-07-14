@@ -8,7 +8,7 @@ import {
 import { ResultDto } from "src/dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
-import { Repository } from "typeorm"
+import { In, Repository } from "typeorm"
 import * as bcrypt from "bcrypt"
 import { Work } from "../work/entities/work.entity"
 import { Category } from "../category/entities/category.entity"
@@ -20,19 +20,37 @@ export class EntrepreneurService {
     constructor(
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>
-    ) { }
+    ) {}
 
-    async findAll(): Promise<Entrepreneur[]> {
+    async findAll(query?: string): Promise<Entrepreneur[]> {
+        const idQueryBuilder = this.entrepreneurRepository
+            .createQueryBuilder("entrepreneur")
+            .leftJoin("entrepreneur.work", "work")
+            .leftJoin("work.modalities", "modality")
+        if (query && query.trim() !== "") {
+            idQueryBuilder.where(
+                "LOWER(entrepreneur.name) LIKE :query OR " +
+                    "LOWER(entrepreneur.address) LIKE :query OR " +
+                    "LOWER(entrepreneur.companyName) LIKE :query OR " +
+                    "LOWER(work.service) LIKE :query OR " +
+                    "LOWER(modality.title) LIKE :query",
+                { query: `%${query.toLowerCase()}%` }
+            )
+        }
+
+        const filteredEntrepreneurs = await idQueryBuilder
+            .select("entrepreneur.entrepreneurId")
+            .getMany()
+        const ids = filteredEntrepreneurs.map((e) => e.entrepreneurId)
+
+        if (ids.length === 0) return []
+
         return this.entrepreneurRepository.find({
-            relations: [
-                "category",
-                "avaliation",
-                "work",
-                "schedulling"
-            ],
+            where: { entrepreneurId: In(ids) },
+            relations: ["category", "avaliation", "work", "schedulling"],
             loadRelationIds: {
                 relations: ["images"]
-            },
+            }
         })
     }
 
@@ -315,7 +333,9 @@ export class EntrepreneurService {
     }
 
     async setResetPasswordCode(email: string, code: string): Promise<void> {
-        const user = await this.entrepreneurRepository.findOne({ where: { email } })
+        const user = await this.entrepreneurRepository.findOne({
+            where: { email }
+        })
         if (!user) {
             throw new HttpException(
                 "Usuário não encontrado",
@@ -332,7 +352,9 @@ export class EntrepreneurService {
         email: string,
         code: string
     ): Promise<boolean> {
-        const user = await this.entrepreneurRepository.findOne({ where: { email } })
+        const user = await this.entrepreneurRepository.findOne({
+            where: { email }
+        })
         if (
             !user ||
             user.resetPasswordCode !== code ||
@@ -344,7 +366,9 @@ export class EntrepreneurService {
     }
 
     async clearResetPasswordCode(email: string): Promise<void> {
-        const entrepreneur = await this.entrepreneurRepository.findOne({ where: { email } })
+        const entrepreneur = await this.entrepreneurRepository.findOne({
+            where: { email }
+        })
         if (entrepreneur) {
             entrepreneur.resetPasswordCode = null
             entrepreneur.resetPasswordExpires = null

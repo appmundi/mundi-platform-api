@@ -41,6 +41,11 @@ export class Schedule {
     modality: Modality
 
     @Column({
+        nullable: true,
+    })
+    description: string
+
+    @Column({
         type: 'enum',
         enum: AgendaStatus,
         default: AgendaStatus.INIT, 

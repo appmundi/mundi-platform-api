@@ -32,10 +32,11 @@ export class SchedulingController {
     async scheduleService(
         @Body()
         body: {
-            modalityId: number;
+            modalityIds: number[];
             entrepreneurId: number;
             scheduledDate: string;
             status: AgendaStatus;
+            description: string,
         },
         @Headers("Authorization") authorizationHeader: string
     ) {
@@ -83,10 +84,11 @@ export class SchedulingController {
     
             const result = await this.schedulingService.scheduleService(
                 userId,
-                body.modalityId,
+                body.modalityIds,
                 body.entrepreneurId,
                 scheduledDate,
-                AgendaStatus.INIT
+                AgendaStatus.INIT,
+                body.description,
             );
     
             return { message: result };
@@ -125,7 +127,7 @@ export class SchedulingController {
         const schedules = await this.schedulingService.findByUserId(
             decodedToken.id
         )
-        const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
+        const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED && schedule.status !== AgendaStatus.FINISHED);
 
         // if (!filteredSchedules || filteredSchedules.length === 0) {
         //     throw new HttpException(
@@ -140,6 +142,7 @@ export class SchedulingController {
                 schedule.id = scheduleResponse.id
                 schedule.scheduledDate = scheduleResponse.scheduledDate
                 schedule.status = scheduleResponse.status
+                schedule.description = scheduleResponse.description
 
                 const user = new User()
                 user.userId = scheduleResponse.user.userId
@@ -436,10 +439,11 @@ export class SchedulingController {
     @Get(":entrepreneurId/available-times")
     async getAvailableTimes(
         @Param("entrepreneurId") entrepreneurId: number,
-        @Query("date") date: string 
+        @Query("date") date: string,
+        @Query("duration") duration: number,
     ): Promise<string[]> {
         const dateObject = new Date(date);
         const dateString = dateObject.toISOString(); 
-        return this.schedulingService.getAvailableTimes(entrepreneurId, dateString); 
+        return this.schedulingService.getAvailableTimes(entrepreneurId, dateString, duration); 
     }
 }
