@@ -263,6 +263,7 @@ export class SchedulingController {
                 entrepreneur.state = scheduleResponse.entrepreneur.state
                 entrepreneur.phone = scheduleResponse.entrepreneur.phone
                 schedule.entrepreneur = entrepreneur
+                schedule.description = scheduleResponse.description
 
                 schedule.id = scheduleResponse.id
                 schedule.scheduledDate = scheduleResponse.scheduledDate
