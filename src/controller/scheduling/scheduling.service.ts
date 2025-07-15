@@ -61,6 +61,11 @@ export class SchedulingService {
         scheduledDate: Date,
         timeSlot: string,
         description: string,
+        address?: {
+            number: string,
+            zipCode: string,
+            complement: string,
+        } | undefined,
     ) {
         const [user, entrepreneur, modalities] = await Promise.all([
             this.userRepository.findOne({ where: { userId } }),
@@ -107,6 +112,9 @@ export class SchedulingService {
             schedule.scheduledDate = new Date(currentDateTime);
             schedule.description = description;
             schedule.modality = modality;
+            schedule.addressNumber = address?.number;
+            schedule.addressZipCode = address?.zipCode;
+            schedule.addressComplement = address?.complement;
     
             const savedSchedule = await this.scheduleRepository.save(schedule);
             createdSchedules.push(savedSchedule);

@@ -37,6 +37,11 @@ export class SchedulingController {
             scheduledDate: string;
             status: AgendaStatus;
             description: string,
+            address?: {
+                number: string,
+                zipCode: string,
+                complement: string,
+            } | undefined,
         },
         @Headers("Authorization") authorizationHeader: string
     ) {
@@ -89,6 +94,7 @@ export class SchedulingController {
                 scheduledDate,
                 AgendaStatus.INIT,
                 body.description,
+                body.address,
             );
     
             return { message: result };
@@ -264,6 +270,9 @@ export class SchedulingController {
                 entrepreneur.phone = scheduleResponse.entrepreneur.phone
                 schedule.entrepreneur = entrepreneur
                 schedule.description = scheduleResponse.description
+                schedule.addressComplement = scheduleResponse.addressComplement
+                schedule.addressNumber = scheduleResponse.addressNumber
+                schedule.addressZipCode = scheduleResponse.addressZipCode
 
                 schedule.id = scheduleResponse.id
                 schedule.scheduledDate = scheduleResponse.scheduledDate
