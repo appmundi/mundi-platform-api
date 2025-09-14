@@ -12,15 +12,26 @@ import {
     UploadedFiles,
     UseInterceptors
 } from "@nestjs/common"
-import { FileFieldsInterceptor, FileInterceptor } from "@nestjs/platform-express"
+import {
+    FileFieldsInterceptor,
+    FileInterceptor
+} from "@nestjs/platform-express"
 import { ImagesService } from "./upload.service"
 import * as path from "path"
 import { Readable } from "typeorm/platform/PlatformTools"
+import * as fs from 'fs';
+import { join } from 'path';
 
 @Controller("images")
 export class ImagesController {
-    private readonly uploadsDir = path.join(process.cwd(), "src", "controller", "uploads", "images")
-    constructor(private readonly imagesService: ImagesService) { }
+    private readonly uploadsDir = path.join(
+        process.cwd(),
+        "src",
+        "controller",
+        "uploads",
+        "images"
+    )
+    constructor(private readonly imagesService: ImagesService) {}
 
     @Post("upload")
     @UseInterceptors(FileFieldsInterceptor([{ name: "images", maxCount: 5 }]))
@@ -46,14 +57,15 @@ export class ImagesController {
     async getImagesByEntrepreneurId(
         @Param("entrepreneurId") entrepreneurId: number
     ): Promise<{ id: number; base64: string }[]> {
-        const images = await this.imagesService.getImagesByEntrepreneurId(entrepreneurId);
+        const images = await this.imagesService.getImagesByEntrepreneurId(
+            entrepreneurId
+        )
 
-        return images.map(image => ({
+        return images.map((image) => ({
             id: image.id,
-            base64: `data:image/jpeg;base64,${image.base64}`,
-        }));
+            base64: `data:image/jpeg;base64,${image.base64}`
+        }))
     }
-
 
     @Delete("delete/:id")
     async deleteImage(@Param("id") id: number) {
@@ -62,23 +74,32 @@ export class ImagesController {
     }
 
     @Post("profile/upload")
-    @UseInterceptors(FileInterceptor('image'))
+    @UseInterceptors(FileInterceptor("image"))
     async updateProfileImage(
         @UploadedFile() image: Express.Multer.File,
         @Body() body: { entrepreneurId: number }
     ) {
         const entrepreneurId = body.entrepreneurId
-        const imagePath = await this.imagesService.uploadProfileImage(image, entrepreneurId);
+        const imagePath = await this.imagesService.uploadProfileImage(
+            image,
+            entrepreneurId
+        )
 
         return { success: true, imagePath }
     }
 
     @Delete("profile/:entrepreneurId")
-    async deleteProfileImage(
-        @Param("entrepreneurId") entrepreneurId: string
-    ) {
-        const id = Number.parseInt(entrepreneurId);
-        await this.imagesService.deleteProfileImage(id);
+    async deleteProfileImage(@Param("entrepreneurId") entrepreneurId: string) {
+        const id = Number.parseInt(entrepreneurId)
+        await this.imagesService.deleteProfileImage(id)
+
+        return { success: true }
+    }
+
+    @Delete("profile/user/:userId")
+    async deleteUserProfileImage(@Param("userId") userId: string) {
+        const id = Number.parseInt(userId)
+        await this.imagesService.deleteUserProfileImage(id)
 
         return { success: true }
     }
@@ -88,15 +109,15 @@ export class ImagesController {
     async serveImage(
         @Param("imageId") imageId: string
     ): Promise<StreamableFile> {
-        const id = Number.parseInt(imageId);
-        const image = await this.imagesService.findImageByID(id);
+        const id = Number.parseInt(imageId)
+        const image = await this.imagesService.findImageByID(id)
 
         if (!image) {
-            throw new NotFoundException("Imagem não encontrada");
+            throw new NotFoundException("Imagem não encontrada")
         }
 
-        const contentType = this.getContentType(image.fileName);
-        return this.createStreamableFile(image.base64, contentType);
+        const contentType = this.getContentType(image.fileName)
+        return this.createStreamableFile(image.base64, contentType)
     }
 
     @Get("profile/:entrepreneurID")
@@ -104,45 +125,80 @@ export class ImagesController {
         @Param("entrepreneurID") entrepreneurID: string
     ): Promise<StreamableFile | null> {
         try {
-            const id = Number.parseInt(entrepreneurID);
-            const image = await this.imagesService.getEntrepreneurProfileImage(id);
+            const id = Number.parseInt(entrepreneurID)
+            const image = await this.imagesService.getEntrepreneurProfileImage(
+                id
+            )
 
             if (!image) {
-                return null;
+                return null
             }
 
-            return this.createStreamableFile(image.base64, 'image/jpeg');
+            return this.createStreamableFile(image.base64, "image/jpeg")
         } catch (error) {
             if (error instanceof NotFoundException) {
-                throw error;
+                throw error
             }
-            throw new NotFoundException("Erro ao processar imagem");
+            throw new NotFoundException("Erro ao processar imagem")
         }
     }
 
-    private createStreamableFile(base64Data: string, contentType: string): StreamableFile {
-        const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
-        const imageBuffer = Buffer.from(cleanBase64, "base64");
+    @Get("profile/user/:userID")
+    async profileUserImage(
+        @Param("userID") userId: string
+    ): Promise<StreamableFile | null> {
+        try {
+            const id = Number.parseInt(userId)
 
-        const readableStream = new Readable();
-        readableStream.push(imageBuffer);
-        readableStream.push(null);
+            const image = await this.imagesService.getUserProfileImage(id);
+
+            const filePath = join(this.uploadsDir, `${image.base64}`)
+            console.log(filePath);
+
+            if (!fs.existsSync(filePath)) {
+                return null // arquivo não existe
+            }
+
+            const fileBuffer = fs.readFileSync(filePath)
+
+            const readableStream = new Readable()
+            readableStream.push(fileBuffer)
+            readableStream.push(null)
+
+            return new StreamableFile(readableStream, {
+                type: "image/jpeg" // ajuste conforme extensão
+            })
+        } catch (error) {
+            throw new NotFoundException("Erro ao processar imagem")
+        }
+    }
+
+    private createStreamableFile(
+        base64Data: string,
+        contentType: string
+    ): StreamableFile {
+        const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "")
+        const imageBuffer = Buffer.from(cleanBase64, "base64")
+
+        const readableStream = new Readable()
+        readableStream.push(imageBuffer)
+        readableStream.push(null)
 
         return new StreamableFile(readableStream, {
-            type: contentType,
-        });
+            type: contentType
+        })
     }
 
     private getContentType(filename: string): string {
-        const extension = filename.toLowerCase().split(".").pop();
+        const extension = filename.toLowerCase().split(".").pop()
         const types = {
             jpg: "image/jpeg",
             jpeg: "image/jpeg",
             png: "image/png",
             gif: "image/gif",
             webp: "image/webp",
-            svg: "image/svg+xml",
-        };
-        return types[extension] || "application/octet-stream";
+            svg: "image/svg+xml"
+        }
+        return types[extension] || "application/octet-stream"
     }
 }

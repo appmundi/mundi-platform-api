@@ -12,7 +12,10 @@ import {
     Put,
     Param,
     Delete,
-    UnauthorizedException
+    UnauthorizedException,
+    UseInterceptors,
+    UploadedFile,
+    Request
 } from "@nestjs/common"
 import { UserService } from "./user.service"
 import { CreateUserDto } from "./dto/create-user.dto"
@@ -23,11 +26,13 @@ import { ReturnUserDto } from "./dto/return-user.dto"
 import { ValidateDoc } from "../helpers/validate.cpf"
 import { ValidatePhone } from "../helpers/validate.phone"
 import { User } from "./entities/user.entity"
-import { MailService } from "../../mail/mail.service";
+import { MailService } from "../../mail/mail.service"
 import * as bcrypt from "bcrypt"
 import { Repository } from "typeorm"
-
-
+import { FileInterceptor } from "@nestjs/platform-express"
+import { ImagesService } from "../uploads/upload.service"
+import { JwtService } from "@nestjs/jwt"
+import { AuthenticatedRequest } from "../helpers/authenticated_request"
 
 @Controller("user")
 export class UserController {
@@ -35,9 +40,11 @@ export class UserController {
         private readonly userService: UserService,
         private authService: AuthService,
         private mailService: MailService,
+        private imageService: ImagesService,
         @Inject("USER_REPOSITORY")
-        private userRepository: Repository<User>
-    ) { }
+        private userRepository: Repository<User>,
+        private jwtService: JwtService
+    ) {}
 
     @UseGuards(JwtAuthGuard)
     @Get("searchAll")
@@ -87,7 +94,7 @@ export class UserController {
             isEntrepreneur: boolean
         }
     ) {
-        console.log(`Trying to validate user: ${req.email}`);
+        console.log(`Trying to validate user: ${req.email}`)
         const { email, password, isEntrepreneur } = req
         const user = await this.authService.validateUser(
             email,
@@ -128,105 +135,117 @@ export class UserController {
         return this.userService.deleteUser(id)
     }
 
-    @Post('reset-password')
+    @Post("reset-password")
     async requestResetPassword(
-        @Body('email') email: string,
+        @Body("email") email: string
     ): Promise<ResultDto> {
         try {
-            const user = await this.userService.findOneByEmail(email);
+            const user = await this.userService.findOneByEmail(email)
             if (!user) {
                 throw new HttpException(
-                    'Usuário não encontrado',
-                    HttpStatus.NOT_FOUND,
-                );
+                    "Usuário não encontrado",
+                    HttpStatus.NOT_FOUND
+                )
             }
 
-            const resetCode = this.userService.generateResetCode();
-            await this.userService.setResetPasswordCode(email, resetCode);
+            const resetCode = this.userService.generateResetCode()
+            await this.userService.setResetPasswordCode(email, resetCode)
 
-            await this.mailService.sendResetPasswordEmail(email, resetCode);
+            await this.mailService.sendResetPasswordEmail(email, resetCode)
 
             return {
                 status: true,
-                mensagem: 'E-mail de redefinição de senha enviado com sucesso.',
-            };
+                mensagem: "E-mail de redefinição de senha enviado com sucesso."
+            }
         } catch (error) {
             throw new HttpException(
-                error.message || 'Erro ao processar a solicitação',
-                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-            );
+                error.message || "Erro ao processar a solicitação",
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR
+            )
         }
     }
 
-    @Post('validate-reset-code')
+    @Post("validate-reset-code")
     async validateResetCode(
-        @Body('email') email: string,
-        @Body('code') code: string,
+        @Body("email") email: string,
+        @Body("code") code: string
     ): Promise<ResultDto> {
         try {
             const isValid = await this.userService.validateResetPasswordCode(
                 email,
-                code,
-            );
+                code
+            )
             if (!isValid) {
                 throw new HttpException(
-                    'Código inválido ou expirado',
-                    HttpStatus.BAD_REQUEST,
-                );
+                    "Código inválido ou expirado",
+                    HttpStatus.BAD_REQUEST
+                )
             }
 
             return {
                 status: true,
-                mensagem: 'Código válido.',
-            };
+                mensagem: "Código válido."
+            }
         } catch (error) {
             throw new HttpException(
-                error.message || 'Erro ao validar o código',
-                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-            );
+                error.message || "Erro ao validar o código",
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR
+            )
         }
     }
 
-    @Post('update-password')
+    @Post("update-password")
     async updatePassword(
-        @Body('email') email: string,
-        @Body('code') code: string,
-        @Body('newPassword') newPassword: string,
+        @Body("email") email: string,
+        @Body("code") code: string,
+        @Body("newPassword") newPassword: string
     ): Promise<ResultDto> {
         try {
             const isValid = await this.userService.validateResetPasswordCode(
                 email,
-                code,
-            );
+                code
+            )
             if (!isValid) {
                 throw new HttpException(
-                    'Código inválido ou expirado',
-                    HttpStatus.BAD_REQUEST,
-                );
+                    "Código inválido ou expirado",
+                    HttpStatus.BAD_REQUEST
+                )
             }
 
-            const user = await this.userService.findOneByEmail(email);
+            const user = await this.userService.findOneByEmail(email)
             if (!user) {
                 throw new HttpException(
-                    'Usuário não encontrado',
-                    HttpStatus.NOT_FOUND,
-                );
+                    "Usuário não encontrado",
+                    HttpStatus.NOT_FOUND
+                )
             }
 
-            user.password = bcrypt.hashSync(newPassword, 8);
-            await this.userRepository.save(user);
+            user.password = bcrypt.hashSync(newPassword, 8)
+            await this.userRepository.save(user)
 
-            await this.userService.clearResetPasswordCode(email);
+            await this.userService.clearResetPasswordCode(email)
 
             return {
                 status: true,
-                mensagem: 'Senha atualizada com sucesso.',
-            };
+                mensagem: "Senha atualizada com sucesso."
+            }
         } catch (error) {
             throw new HttpException(
-                error.message || 'Erro ao atualizar a senha',
-                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-            );
+                error.message || "Erro ao atualizar a senha",
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR
+            )
         }
+    }
+
+    @Put("/update-image/:id")
+    @UseInterceptors(FileInterceptor("image"))
+    async updateImage(
+        @UploadedFile() image: Express.Multer.File,
+        @Param("id") id: string
+    ) {
+        const result = await this.imageService.storeImage(image)
+        await this.userService.updateImage(Number(id), result.name)
+
+        return { status: true, message: "Imagem atualizada com sucesso." }
     }
 }

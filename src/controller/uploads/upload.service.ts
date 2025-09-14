@@ -6,6 +6,8 @@ import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import * as path from "path"
 import { ImageDTO } from "src/dto/image.dto"
 import * as sharp from "sharp"
+import { User } from "../user/entities/user.entity"
+import { InjectRepository } from "@nestjs/typeorm"
 
 @Injectable()
 export class ImagesService {
@@ -13,7 +15,9 @@ export class ImagesService {
         @Inject("IMAGE_REPOSITORY")
         private imageRepository: Repository<Image>,
         @Inject("ENTREPRENEUR_REPOSITORY")
-        private entrepreneurRepository: Repository<Entrepreneur>
+        private entrepreneurRepository: Repository<Entrepreneur>,
+        @Inject("USER_REPOSITORY")
+        private userRepository: Repository<User>
     ) {}
 
     async uploadImage(
@@ -142,9 +146,27 @@ export class ImagesService {
         if (!entrepreneur) {
             throw new NotFoundException("Empreendedor não encontrado")
         }
-        const updated = entrepreneur.profileImage == null;
+        const updated = entrepreneur.profileImage == null
         if (!updated) {
-            throw new Error('Erro ao atualizar imagem');
+            throw new Error("Erro ao atualizar imagem")
+        }
+    }
+
+    async deleteUserProfileImage(userId: number): Promise<void> {
+        await this.entrepreneurRepository.query(
+            `UPDATE user SET imageUrl = NULL WHERE userId = ?`,
+            [userId]
+        )
+
+        const user = await this.userRepository.findOneBy({
+            userId
+        })
+        if (!user) {
+            throw new NotFoundException("Empreendedor não encontrado")
+        }
+        const updated = user.imageUrl == null
+        if (!updated) {
+            throw new Error("Erro ao atualizar imagem")
         }
     }
 
@@ -166,6 +188,27 @@ export class ImagesService {
 
         return {
             base64: entrepreneur.profileImage
+        }
+    }
+
+    async getUserProfileImage(
+        userID: number
+    ): Promise<{ base64: string } | null> {
+        const user = await this.userRepository.findOne({
+            where: {
+                userId: userID
+            },
+            select: {
+                imageUrl: true
+            }
+        })
+
+        if (!user.imageUrl) {
+            return null
+        }
+
+        return {
+            base64: user.imageUrl
         }
     }
 }

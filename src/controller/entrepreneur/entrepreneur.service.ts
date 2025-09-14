@@ -24,9 +24,9 @@ export class EntrepreneurService {
 
     async findAll(query?: string): Promise<Entrepreneur[]> {
         const idQueryBuilder = this.entrepreneurRepository
-            .createQueryBuilder("entrepreneur")
-            .leftJoin("entrepreneur.work", "work")
-            .leftJoin("work.modalities", "modality")
+        .createQueryBuilder("entrepreneur")
+        .leftJoinAndSelect("entrepreneur.work", "work", "work.active = :active", { active: true })
+        .leftJoinAndSelect("work.modalities", "modality") 
         if (query && query.trim() !== "") {
             idQueryBuilder.where(
                 "LOWER(entrepreneur.name) LIKE :query OR " +
@@ -268,7 +268,8 @@ export class EntrepreneurService {
         try {
             const entrepreneur = await this.entrepreneurRepository
                 .createQueryBuilder("entrepreneur")
-                .leftJoinAndSelect("entrepreneur.work", "work")
+                .leftJoinAndSelect("entrepreneur.work", "work", "work.active = :active", { active: true })
+                .leftJoinAndSelect("work.modalities", "modality") 
                 .where("entrepreneur.entrepreneurId = :id", { id })
                 .getOne()
 

@@ -85,7 +85,8 @@ export class WorkController {
     @Delete(":id")
     async deleteWork(@Param("id") id: number) {
         try {
-            await this.modalityService.deleteModalitiesByWorkId(id);
+            console.log('caiu aquui');
+            // await this.modalityService.deleteModalitiesByWorkId(id);
             
             await this.workService.deleteWork(id);
             
