@@ -35,7 +35,7 @@ export class WorkService {
     }
 
     async findWork(id: number): Promise<Work> {
-        return await this.workRepository.findOne({ where: { id: id } })
+        return await this.workRepository.findOne({ where: { id: id, active: true } })
     }
 
     async findWorks(id: number): Promise<Work> {
@@ -49,10 +49,14 @@ export class WorkService {
 
     async deleteWork(id: number): Promise<void> {
         try {
-            const result = await this.workRepository.delete(id);
-            if (result.affected === 0) {
+            const result = await this.workRepository.findOne({where: {id}});
+            if (!result) {
                 throw new Error('Work não encontrada');
             }
+
+            result.active = false;
+
+            await this.workRepository.save(result);
         } catch (error) {
             throw new Error(`Falha ao deletar modalidade: ${error.message}`);
         }

@@ -15,4 +15,7 @@ export class Work {
 
     @OneToMany(() => Modality, (Modality) => Modality.work)
     modalities: Modality[]
+
+    @Column({default: true})
+    active: boolean
 }

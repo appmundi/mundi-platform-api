@@ -41,6 +41,26 @@ export class Schedule {
     modality: Modality
 
     @Column({
+        nullable: true,
+    })
+    description: string
+
+    @Column({
+        nullable: true
+    })
+    addressZipCode: string
+
+    @Column({
+        nullable: true
+    })
+    addressNumber: string
+
+    @Column({
+        nullable: true
+    })
+    addressComplement: string
+
+    @Column({
         type: 'enum',
         enum: AgendaStatus,
         default: AgendaStatus.INIT, 

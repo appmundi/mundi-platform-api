@@ -1,4 +1,4 @@
-import { Injectable, Inject, HttpException, HttpStatus } from "@nestjs/common"
+import { Injectable, Inject, HttpException, HttpStatus, NotFoundException } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "./entities/user.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
@@ -201,5 +201,14 @@ export class UserService {
         }
     }
 
-    
+    async updateImage(id: number, imagePath: string): Promise<void> {
+        const user = await this.userRepository.findOne({where: {userId: id}});
+        if(!user) {
+            throw new NotFoundException();
+        }
+
+        user.imageUrl = imagePath;
+
+        await this.userRepository.save(user);
+    }
 }

@@ -13,7 +13,10 @@ import {
     Param,
     Request,
     UnauthorizedException,
-    Inject
+    Inject,
+    UseInterceptors,
+    UploadedFile,
+    Query
 } from "@nestjs/common"
 import { EntrepreneurService } from "./entrepreneur.service"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
@@ -30,6 +33,7 @@ import { Category } from "../category/entities/category.entity"
 import { MailService } from "src/mail/mail.service"
 import { Repository } from "typeorm"
 import * as bcrypt from "bcrypt"
+import { FileInterceptor } from "@nestjs/platform-express"
 
 @Controller("entrepreneur")
 export class EntrepreneurController {
@@ -39,7 +43,7 @@ export class EntrepreneurController {
         private mailService: MailService,
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
-    ) {}
+    ) { }
 
     @UsePipes(ValidationPipe)
     @Post("register")
@@ -66,9 +70,8 @@ export class EntrepreneurController {
     }
 
     @Get("searchAll")
-    async findAll(): Promise<Entrepreneur[]> {
-        console.log("trying to retrive all Entrepreneurs")
-        return this.entrepreneurService.findAll()
+    async findAll(@Query("query") query?: string | undefined): Promise<Entrepreneur[]> {
+        return this.entrepreneurService.findAll(query)
     }
 
     @Get("search/:id")
@@ -167,104 +170,104 @@ export class EntrepreneurController {
     }
 
     @Post('reset-password')
-        async requestResetPassword(
-            @Body('email') email: string,
-        ): Promise<ResultDto> {
-            try {
-                const user = await this.entrepreneurService.findOneByEmail(email);
-                if (!user) {
-                    throw new HttpException(
-                        'Usuário não encontrado',
-                        HttpStatus.NOT_FOUND,
-                    );
-                }
-    
-                const resetCode = this.entrepreneurService.generateResetCode();
-                await this.entrepreneurService.setResetPasswordCode(email, resetCode);
-    
-                await this.mailService.sendResetPasswordEmail(email, resetCode);
-    
-                return {
-                    status: true,
-                    mensagem: 'E-mail de redefinição de senha enviado com sucesso.',
-                };
-            } catch (error) {
+    async requestResetPassword(
+        @Body('email') email: string,
+    ): Promise<ResultDto> {
+        try {
+            const user = await this.entrepreneurService.findOneByEmail(email);
+            if (!user) {
                 throw new HttpException(
-                    error.message || 'Erro ao processar a solicitação',
-                    error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+                    'Usuário não encontrado',
+                    HttpStatus.NOT_FOUND,
                 );
             }
+
+            const resetCode = this.entrepreneurService.generateResetCode();
+            await this.entrepreneurService.setResetPasswordCode(email, resetCode);
+
+            await this.mailService.sendResetPasswordEmail(email, resetCode);
+
+            return {
+                status: true,
+                mensagem: 'E-mail de redefinição de senha enviado com sucesso.',
+            };
+        } catch (error) {
+            throw new HttpException(
+                error.message || 'Erro ao processar a solicitação',
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
-    
-        @Post('validate-reset-code')
-        async validateResetCode(
-            @Body('email') email: string,
-            @Body('code') code: string,
-        ): Promise<ResultDto> {
-            try {
-                const isValid = await this.entrepreneurService.validateResetPasswordCode(
-                    email,
-                    code,
-                );
-                if (!isValid) {
-                    throw new HttpException(
-                        'Código inválido ou expirado',
-                        HttpStatus.BAD_REQUEST,
-                    );
-                }
-    
-                return {
-                    status: true,
-                    mensagem: 'Código válido.',
-                };
-            } catch (error) {
+    }
+
+    @Post('validate-reset-code')
+    async validateResetCode(
+        @Body('email') email: string,
+        @Body('code') code: string,
+    ): Promise<ResultDto> {
+        try {
+            const isValid = await this.entrepreneurService.validateResetPasswordCode(
+                email,
+                code,
+            );
+            if (!isValid) {
                 throw new HttpException(
-                    error.message || 'Erro ao validar o código',
-                    error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+                    'Código inválido ou expirado',
+                    HttpStatus.BAD_REQUEST,
                 );
             }
+
+            return {
+                status: true,
+                mensagem: 'Código válido.',
+            };
+        } catch (error) {
+            throw new HttpException(
+                error.message || 'Erro ao validar o código',
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
-    
-        @Post('update-password')
-        async updatePassword(
-            @Body('email') email: string,
-            @Body('code') code: string,
-            @Body('newPassword') newPassword: string,
-        ): Promise<ResultDto> {
-            try {
-                const isValid = await this.entrepreneurService.validateResetPasswordCode(
-                    email,
-                    code,
-                );
-                if (!isValid) {
-                    throw new HttpException(
-                        'Código inválido ou expirado',
-                        HttpStatus.BAD_REQUEST,
-                    );
-                }
-    
-                const user = await this.entrepreneurService.findOneByEmail(email);
-                if (!user) {
-                    throw new HttpException(
-                        'Usuário não encontrado',
-                        HttpStatus.NOT_FOUND,
-                    );
-                }
-    
-                user.password = bcrypt.hashSync(newPassword, 8);
-                await this.entrepreneurRepository.save(user);
-    
-                await this.entrepreneurService.clearResetPasswordCode(email);
-    
-                return {
-                    status: true,
-                    mensagem: 'Senha atualizada com sucesso.',
-                };
-            } catch (error) {
+    }
+
+    @Post('update-password')
+    async updatePassword(
+        @Body('email') email: string,
+        @Body('code') code: string,
+        @Body('newPassword') newPassword: string,
+    ): Promise<ResultDto> {
+        try {
+            const isValid = await this.entrepreneurService.validateResetPasswordCode(
+                email,
+                code,
+            );
+            if (!isValid) {
                 throw new HttpException(
-                    error.message || 'Erro ao atualizar a senha',
-                    error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+                    'Código inválido ou expirado',
+                    HttpStatus.BAD_REQUEST,
                 );
             }
+
+            const user = await this.entrepreneurService.findOneByEmail(email);
+            if (!user) {
+                throw new HttpException(
+                    'Usuário não encontrado',
+                    HttpStatus.NOT_FOUND,
+                );
+            }
+
+            user.password = bcrypt.hashSync(newPassword, 8);
+            await this.entrepreneurRepository.save(user);
+
+            await this.entrepreneurService.clearResetPasswordCode(email);
+
+            return {
+                status: true,
+                mensagem: 'Senha atualizada com sucesso.',
+            };
+        } catch (error) {
+            throw new HttpException(
+                error.message || 'Erro ao atualizar a senha',
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
+    }
 }
