@@ -42,6 +42,12 @@ export class CreateEntrepreneurDto {
     @IsString()
     readonly state: string
 
+    @IsNumber()
+    readonly latitude: number
+
+    @IsNumber()
+    readonly longitude: number
+
     @IsString()
     readonly deslocation: string
 
@@ -53,6 +59,9 @@ export class CreateEntrepreneurDto {
 
     @IsBoolean()
     readonly status?: boolean
+
+    @IsString()
+    readonly category: string
 
     readonly image: Express.Multer.File;
 }

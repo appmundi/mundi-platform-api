@@ -60,6 +60,12 @@ export class Entrepreneur {
     @Column()
     valueDeslocation: string
 
+    @Column('double', {default: 0})
+    latitude: number;
+
+    @Column('double', {default: 0.0, })
+    longitude: number;
+
     @Column({ type: "json" })
     operation: JSON
 
