@@ -13,6 +13,7 @@ import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import { Modality } from "../modality/entities/modality.entity"
 import { DateTime } from "luxon"
+import { Avaliation } from "../avaliation/entities/avaliation.entity"
 
 @Injectable()
 export class SchedulingService {
@@ -24,7 +25,9 @@ export class SchedulingService {
         @Inject("SCHEDULE_REPOSITORY")
         private scheduleRepository: Repository<Schedule>,
         @Inject("MODALITY_REPOSITORY")
-        private modalityRepository: Repository<Modality>
+        private modalityRepository: Repository<Modality>,
+        @Inject("AVALIATION_REPOSITORY")
+        private avaliationRepository: Repository<Avaliation>
     ) {}
 
     async isTimeSlotAvailable(
@@ -49,6 +52,22 @@ export class SchedulingService {
             throw new NotFoundException(`Agenda with ID ${id} not found`)
         }
 
+        if (newStatus == AgendaStatus.FEEDBACK) {
+            const avaliation = await this.avaliationRepository.find({
+                where: {
+                    userId: agenda.user.userId,
+                    entrepreneur: {
+                        entrepreneurId: agenda.entrepreneur.entrepreneurId
+                    }
+                }
+            })
+
+            if(avaliation.length > 0) {
+                agenda.status == AgendaStatus.FINISHED;
+                return this.scheduleRepository.save(agenda)
+            }
+        }
+
         agenda.status = newStatus
         console.log("Trying to update the Schedule")
         return this.scheduleRepository.save(agenda)
@@ -61,79 +80,91 @@ export class SchedulingService {
         scheduledDate: Date,
         timeSlot: string,
         description: string,
-        address?: {
-            number: string,
-            zipCode: string,
-            complement: string,
-        } | undefined,
+        address?:
+            | {
+                  number: string
+                  zipCode: string
+                  complement: string
+              }
+            | undefined
     ) {
         const [user, entrepreneur, modalities] = await Promise.all([
             this.userRepository.findOne({ where: { userId } }),
             this.entrepreneurRepository.findOne({ where: { entrepreneurId } }),
             this.modalityRepository.find({ where: { id: In(ids) } })
-        ]);
-    
+        ])
+
         if (!user || !entrepreneur) {
-            throw new Error("Usuário ou prestador de serviços não encontrado.");
+            throw new Error("Usuário ou prestador de serviços não encontrado.")
         }
-    
+
         if (!modalities || modalities.length === 0) {
-            throw new Error("Modalidades não encontradas.");
+            throw new Error("Modalidades não encontradas.")
         }
-    
-        const baseDateTime = new Date(scheduledDate);
+
+        const baseDateTime = new Date(scheduledDate)
         if (isNaN(baseDateTime.getTime())) {
-            throw new Error("Data de agendamento inválida.");
+            throw new Error("Data de agendamento inválida.")
         }
-    
-        const orderedModalities = ids.map(id => 
-            modalities.find(modality => modality.id === id)
-        ).filter(Boolean);
-    
-        let currentDateTime = new Date(baseDateTime);
-        const createdSchedules = [];
-    
+
+        const orderedModalities = ids
+            .map((id) => modalities.find((modality) => modality.id === id))
+            .filter(Boolean)
+
+        let currentDateTime = new Date(baseDateTime)
+        const createdSchedules = []
+
         for (const modality of orderedModalities) {
-            const isAvailable = await this.isTimeSlotAvailable(entrepreneurId, currentDateTime);
-            
+            const isAvailable = await this.isTimeSlotAvailable(
+                entrepreneurId,
+                currentDateTime
+            )
+
             if (!isAvailable) {
                 if (createdSchedules.length > 0) {
-                    await this.scheduleRepository.remove(createdSchedules);
+                    await this.scheduleRepository.remove(createdSchedules)
                 }
-                throw new Error(`Horário ${currentDateTime.toLocaleTimeString('pt-BR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                })} não está disponível para o serviço "${modality.title}".`);
+                throw new Error(
+                    `Horário ${currentDateTime.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    })} não está disponível para o serviço "${modality.title}".`
+                )
             }
-    
-            const schedule = new Schedule();
-            schedule.user = user;
-            schedule.entrepreneur = entrepreneur;
-            schedule.scheduledDate = new Date(currentDateTime);
-            schedule.description = description;
-            schedule.modality = modality;
-            schedule.addressNumber = address?.number;
-            schedule.addressZipCode = address?.zipCode;
-            schedule.addressComplement = address?.complement;
-    
-            const savedSchedule = await this.scheduleRepository.save(schedule);
-            createdSchedules.push(savedSchedule);
-    
-            currentDateTime = new Date(currentDateTime.getTime() + (modality.duration * 1000));
+
+            const schedule = new Schedule()
+            schedule.user = user
+            schedule.entrepreneur = entrepreneur
+            schedule.scheduledDate = new Date(currentDateTime)
+            schedule.description = description
+            schedule.modality = modality
+            schedule.addressNumber = address?.number
+            schedule.addressZipCode = address?.zipCode
+            schedule.addressComplement = address?.complement
+
+            const savedSchedule = await this.scheduleRepository.save(schedule)
+            createdSchedules.push(savedSchedule)
+
+            currentDateTime = new Date(
+                currentDateTime.getTime() + modality.duration * 1000
+            )
         }
-    
+
         return {
             message: "Agendamentos criados com sucesso.",
-            schedules: createdSchedules.map(schedule => ({
+            schedules: createdSchedules.map((schedule) => ({
                 id: schedule.id,
                 modalityName: schedule.modality.name,
-                scheduledTime: schedule.scheduledDate.toLocaleTimeString('pt-BR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                }),
+                scheduledTime: schedule.scheduledDate.toLocaleTimeString(
+                    "pt-BR",
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    }
+                ),
                 duration: schedule.modality.duration
             }))
-        };
+        }
     }
 
     async deleteSchedule(id: number): Promise<string> {
@@ -217,74 +248,80 @@ export class SchedulingService {
     ): Promise<string[]> {
         const dateObj: DateTime = DateTime.fromISO(date, {
             setZone: "America/Sao_Paulo"
-        });
-    
+        })
+
         const scheduledAppointments = await this.findByEntrepreneurId(
             entrepreneurId
-        );
-    
+        )
+
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
-        });
-    
+        })
+
         if (!entrepreneur) {
-            throw new Error("Entrepreneur not found");
+            throw new Error("Entrepreneur not found")
         }
-    
+
         const operationHours = Array.isArray(entrepreneur.operation)
             ? entrepreneur.operation
-            : JSON.parse(entrepreneur.operation as unknown as string);
-    
+            : JSON.parse(entrepreneur.operation as unknown as string)
+
         const dayOfWeek = dateObj
             .toFormat("cccc", { locale: "pt-BR" })
             .trim()
-            .toLowerCase();
-    
+            .toLowerCase()
+
         const todayOperation = operationHours.find((op: any) => {
-            return op.day.trim().toLowerCase() === dayOfWeek && op.isActive;
-        });
-    
+            return op.day.trim().toLowerCase() === dayOfWeek && op.isActive
+        })
+
         if (!todayOperation) {
-            return [];
+            return []
         }
-    
+
         const workingHours = this.generateWorkingHours(
             todayOperation.openinHours,
             todayOperation.closingTime
-        );
-    
+        )
+
         const occupiedTimes = scheduledAppointments
             .filter((schedule) => {
                 const scheduledDate = DateTime.fromISO(
                     schedule.scheduledDate.toISOString(),
                     { zone: "utc" }
-                );
-                return scheduledDate.toISODate() === dateObj.toISODate();
+                )
+                return scheduledDate.toISODate() === dateObj.toISODate()
             })
             .map((schedule) =>
-                DateTime.fromISO(schedule.scheduledDate.toISOString()).toFormat("HH:mm")
-            );
-    
-        const blockSize = duration / 30;
-        const availableTimes: string[] = [];
-    
+                DateTime.fromISO(schedule.scheduledDate.toISOString()).toFormat(
+                    "HH:mm"
+                )
+            )
+
+        const blockSize = duration / 30
+        const availableTimes: string[] = []
+
         for (let i = 0; i <= workingHours.length - blockSize; i++) {
-            const timeBlock = workingHours.slice(i, i + blockSize);
-            const isBlockFree = timeBlock.every((time) => !occupiedTimes.includes(time));
+            const timeBlock = workingHours.slice(i, i + blockSize)
+            const isBlockFree = timeBlock.every(
+                (time) => !occupiedTimes.includes(time)
+            )
             if (isBlockFree) {
-                const [hour, minute] = timeBlock[0].split(":").map(Number);
-                const blockStartTime = dateObj.set({ hour, minute });
-    
-                const now = DateTime.now().setZone("America/Sao_Paulo");
-                if (dateObj.toISODate() !== now.toISODate() || blockStartTime > now) {
-                    availableTimes.push(timeBlock[0]);
+                const [hour, minute] = timeBlock[0].split(":").map(Number)
+                const blockStartTime = dateObj.set({ hour, minute })
+
+                const now = DateTime.now().setZone("America/Sao_Paulo")
+                if (
+                    dateObj.toISODate() !== now.toISODate() ||
+                    blockStartTime > now
+                ) {
+                    availableTimes.push(timeBlock[0])
                 }
             }
         }
-    
-        return availableTimes;
+
+        return availableTimes
     }
-    
 
     private generateWorkingHours(
         openingTime: string,

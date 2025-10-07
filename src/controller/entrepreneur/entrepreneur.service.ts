@@ -18,8 +18,10 @@ import { Image } from "../uploads/entities/upload.entity"
 @Injectable()
 export class EntrepreneurService {
     constructor(
+        @Inject("CATEGORY_REPOSITORY")
+        private categoryRepository: Repository<Category>,
         @Inject("ENTREPRENEUR_REPOSITORY")
-        private entrepreneurRepository: Repository<Entrepreneur>
+        private entrepreneurRepository: Repository<Entrepreneur>,
     ) {}
 
     async findAll(query?: string): Promise<Entrepreneur[]> {
@@ -145,6 +147,11 @@ export class EntrepreneurService {
             )
         }
         const entrepreneur = new Entrepreneur()
+        const category = await this.categoryRepository.findOne({
+            where: {
+                type: data.category,
+            }
+        });
 
         entrepreneur.name = data.name
         entrepreneur.email = data.email
@@ -154,6 +161,8 @@ export class EntrepreneurService {
         entrepreneur.companyName = data.companyName
         entrepreneur.optionwork = data.optionwork
         entrepreneur.address = data.address
+        entrepreneur.latitude = data.latitude
+        entrepreneur.longitude = data.longitude
         entrepreneur.addressNumber = data.addressNumber
         entrepreneur.cep = data.cep
         entrepreneur.city = data.city
@@ -162,6 +171,7 @@ export class EntrepreneurService {
         entrepreneur.valueDeslocation = data.valueDeslocation
         entrepreneur.operation = data.operation
         entrepreneur.status = data.status
+        entrepreneur.category = [category];
 
         /*const fileName = `${Date.now()}-${data.image.originalname}`;
 
@@ -246,7 +256,7 @@ export class EntrepreneurService {
             .createQueryBuilder()
             .select(`getEntrepreneurData(${entrepreneurId})`, "entrepreneur")
             .getRawOne()
-
+        console.log(entrepreneur)
         return entrepreneur.entrepreneur
     }
 
@@ -289,7 +299,7 @@ export class EntrepreneurService {
 
     async updateCategory(
         id: number,
-        categoryData: Partial<Category[]>
+        categoryData: Category[]
     ): Promise<void> {
         const entrepreneur = await this.entrepreneurRepository
             .createQueryBuilder("entrepreneur")
@@ -300,10 +310,11 @@ export class EntrepreneurService {
         if (!entrepreneur) {
             throw new NotFoundException("Entrepreneur not found")
         }
+        console.log(categoryData);
+        entrepreneur.category = categoryData
 
-        entrepreneur.category = [...categoryData] // Substitui todas as categorias anteriores pelas novas
-
-        await this.entrepreneurRepository.save(entrepreneur)
+        const result = await this.entrepreneurRepository.save(entrepreneur)
+        console.log(result.category);
     }
 
     async updateSchedule(

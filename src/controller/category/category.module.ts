@@ -22,6 +22,7 @@ import { EntrepreneurProviders } from "../entrepreneur/entrepreneur.providers"
         CategoryService,
         EntrepreneurService,
         ...EntrepreneurProviders
-    ]
+    ],
+    exports: [CategoryService, "CATEGORY_REPOSITORY"]
 })
 export class CategoryModule {}

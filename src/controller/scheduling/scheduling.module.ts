@@ -15,7 +15,8 @@ import { ModalityProviders } from "../modality/modality.providers"
         forwardRef(() => AuthModule),
         TypeOrmModule.forFeature([], "SCHEDULE_REPOSITORY"),
         TypeOrmModule.forFeature([], "ENTREPRENEUR_REPOSITORY"),
-        TypeOrmModule.forFeature([], "USER_REPOSITORY")
+        TypeOrmModule.forFeature([], "USER_REPOSITORY"),
+        TypeOrmModule.forFeature([], "AVALIATION_REPOSITORY"),
     ],
     controllers: [SchedulingController],
     providers: [

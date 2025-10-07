@@ -164,9 +164,22 @@ export class EntrepreneurController {
     @Put(":id/update-category")
     async updateCategory(
         @Param("id") id: number,
-        @Body() categoryData: Partial<Category[]>
-    ): Promise<void> {
-        await this.entrepreneurService.updateCategory(id, categoryData)
+        @Body() categoryData: Category[]
+    ): Promise<ResultDto> {
+        try {
+            await this.entrepreneurService.updateCategory(id, categoryData)
+
+            return {
+                mensagem: "Categorias atualizadas",
+                status: true,
+            };
+        } catch(error) {
+            throw new HttpException(
+                error.message || 'Erro ao processar a solicitação',
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+
     }
 
     @Post('reset-password')
