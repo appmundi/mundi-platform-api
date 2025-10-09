@@ -7,7 +7,7 @@ import {
     Param,
     Query
 } from "@nestjs/common"
-import { Repository, In } from "typeorm"
+import { Repository, In, Between } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
@@ -62,8 +62,8 @@ export class SchedulingService {
                 }
             })
 
-            if(avaliation.length > 0) {
-                agenda.status == AgendaStatus.FINISHED;
+            if (avaliation.length > 0) {
+                agenda.status = AgendaStatus.FINISHED
                 return this.scheduleRepository.save(agenda)
             }
         }
@@ -250,9 +250,24 @@ export class SchedulingService {
             setZone: "America/Sao_Paulo"
         })
 
-        const scheduledAppointments = await this.findByEntrepreneurId(
-            entrepreneurId
-        )
+        const startOfDay = DateTime.fromISO(date, { zone: "utc" })
+            .startOf("day")
+            .toUTC()
+            .toJSDate()
+        const endOfDay = DateTime.fromISO(date, { zone: "utc" })
+            .endOf("day")
+            .toUTC()
+            .toJSDate()
+
+        const scheduledAppointments = await this.scheduleRepository.find({
+            where: {
+                entrepreneur: { entrepreneurId: entrepreneurId },
+                scheduledDate: Between(startOfDay, endOfDay)
+            },
+            relations: {
+                modality: true,
+            }
+        })
 
         const entrepreneur = await this.entrepreneurRepository.findOne({
             where: { entrepreneurId }
@@ -284,19 +299,21 @@ export class SchedulingService {
             todayOperation.closingTime
         )
 
-        const occupiedTimes = scheduledAppointments
-            .filter((schedule) => {
-                const scheduledDate = DateTime.fromISO(
-                    schedule.scheduledDate.toISOString(),
-                    { zone: "utc" }
-                )
-                return scheduledDate.toISODate() === dateObj.toISODate()
-            })
-            .map((schedule) =>
-                DateTime.fromISO(schedule.scheduledDate.toISOString()).toFormat(
-                    "HH:mm"
-                )
-            )
+        const occupiedTimes = scheduledAppointments.flatMap((schedule) => {
+            const start = DateTime.fromISO(schedule.scheduledDate.toISOString());
+            const end = start.plus({ seconds: schedule.modality.duration });
+
+            const times = [];
+            let current = start;
+            console.log(start, end);
+            console.log(current);
+            while (current < end) {
+                times.push(current.toFormat("HH:mm"));
+                current = current.plus({ minutes: 30 });
+            }
+
+            return times;
+        });
 
         const blockSize = duration / 30
         const availableTimes: string[] = []
