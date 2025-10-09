@@ -48,6 +48,7 @@ export class SchedulingService {
         console.log("Trying to find the Schedule")
         const agenda = await this.scheduleRepository.findOne({ where: { id }, relations: {
             entrepreneur: true,
+            user: true,
         } })
 
         if (!agenda) {
