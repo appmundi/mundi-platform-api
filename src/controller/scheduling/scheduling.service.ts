@@ -46,7 +46,9 @@ export class SchedulingService {
 
     async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
         console.log("Trying to find the Schedule")
-        const agenda = await this.scheduleRepository.findOne({ where: { id } })
+        const agenda = await this.scheduleRepository.findOne({ where: { id }, relations: {
+            entrepreneur: true,
+        } })
 
         if (!agenda) {
             throw new NotFoundException(`Agenda with ID ${id} not found`)
