@@ -63,7 +63,7 @@ export class SchedulingService {
             })
 
             if (avaliation.length > 0) {
-                agenda.status == AgendaStatus.FINISHED
+                agenda.status = AgendaStatus.FINISHED
                 return this.scheduleRepository.save(agenda)
             }
         }
