@@ -34,6 +34,17 @@ export class AvaliationService {
             )
         }
 
+        const exists = await this.avaliationRepository.findOne({
+            where: {
+                entrepreneur: {
+                    entrepreneurId: entrepreneur.entrepreneurId,
+                }
+            }
+        });
+        if(exists) {
+            return exists;
+        }
+
         const avaliation = new Avaliation()
         avaliation.rating = rating
         avaliation.comment = comment
