@@ -197,7 +197,10 @@ export class ImagesController {
             png: "image/png",
             gif: "image/gif",
             webp: "image/webp",
-            svg: "image/svg+xml"
+            svg: "image/svg+xml",
+            heic: "image/heic",
+            heif: "image/heif",
+            hif: "image/heif"
         }
         return types[extension] || "application/octet-stream"
     }
