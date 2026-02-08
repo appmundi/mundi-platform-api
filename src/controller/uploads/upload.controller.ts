@@ -34,7 +34,32 @@ export class ImagesController {
     constructor(private readonly imagesService: ImagesService) {}
 
     @Post("upload")
-    @UseInterceptors(FileFieldsInterceptor([{ name: "images", maxCount: 5 }]))
+    @UseInterceptors(
+        FileFieldsInterceptor([{ name: "images", maxCount: 5 }], {
+            fileFilter: (req, file, callback) => {
+                const allowedMimeTypes = [
+                    "image/jpeg",
+                    "image/jpg",
+                    "image/png",
+                    "image/gif",
+                    "image/webp",
+                    "image/svg+xml",
+                    "image/heic",
+                    "image/heif"
+                ]
+                if (allowedMimeTypes.includes(file.mimetype)) {
+                    callback(null, true)
+                } else {
+                    callback(
+                        new Error(
+                            `Tipo de arquivo não permitido. Tipos aceitos: ${allowedMimeTypes.join(", ")}`
+                        ),
+                        false
+                    )
+                }
+            }
+        })
+    )
     async uploadImages(
         @UploadedFiles() files,
         @Body() body: { entrepreneurId: number }
@@ -197,10 +222,7 @@ export class ImagesController {
             png: "image/png",
             gif: "image/gif",
             webp: "image/webp",
-            svg: "image/svg+xml",
-            heic: "image/heic",
-            heif: "image/heif",
-            hif: "image/heif"
+            svg: "image/svg+xml"
         }
         return types[extension] || "application/octet-stream"
     }
