@@ -4,6 +4,7 @@ import { AppModule } from "./app.module"
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger"
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import * as express from 'express';
 
 
 
@@ -12,6 +13,10 @@ declare const module: any
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+    // Configurar limite de tamanho do body para 15MB
+    app.use(express.json({ limit: '15mb' }));
+    app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
     // Configurar arquivos estáticos
     const uploadsPath = join(__dirname, '..', 'uploads');

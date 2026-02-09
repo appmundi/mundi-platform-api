@@ -63,7 +63,9 @@ export class ImagesService {
     }
 
     async storeImage(image: Express.Multer.File): Promise<ImageDTO> {
-        const fileName = `${Date.now()}-${image.originalname}`
+        // Remove a extensão original e adiciona .jpg, já que sempre convertemos para JPEG
+        const originalNameWithoutExt = image.originalname.replace(/\.[^/.]+$/, "")
+        const fileName = `${Date.now()}-${originalNameWithoutExt}.jpg`
         const uploadFolder = path.resolve(
             __dirname,
             "../../../src/controller/uploads/images"
@@ -74,6 +76,7 @@ export class ImagesService {
         fs.mkdirSync(uploadFolder, { recursive: true })
 
         try {
+            // Converte qualquer formato de imagem (HEIC, HEIF, PNG, etc.) para JPEG
             const compressedBuffer = await sharp(image.buffer)
                 .jpeg({
                     quality: 80,

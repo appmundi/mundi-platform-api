@@ -36,6 +36,9 @@ export class ImagesController {
     @Post("upload")
     @UseInterceptors(
         FileFieldsInterceptor([{ name: "images", maxCount: 5 }], {
+            limits: {
+                fileSize: 15 * 1024 * 1024 // 15MB
+            },
             fileFilter: (req, file, callback) => {
                 const allowedMimeTypes = [
                     "image/jpeg",
