@@ -14,9 +14,10 @@ declare const module: any
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-    // Configurar limite de tamanho do body para 15MB
-    app.use(express.json({ limit: '15mb' }));
-    app.use(express.urlencoded({ limit: '15mb', extended: true }));
+    // Configurar limite de tamanho do body para 50MB (para uploads de imagens)
+    app.use(express.json({ limit: '50mb' }));
+    app.use(express.urlencoded({ limit: '50mb', extended: true }));
+    console.log('✅ Limite de upload configurado: 50MB');
 
     // Configurar arquivos estáticos
     const uploadsPath = join(__dirname, '..', 'uploads');

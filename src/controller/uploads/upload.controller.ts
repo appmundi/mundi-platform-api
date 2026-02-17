@@ -37,7 +37,8 @@ export class ImagesController {
     @UseInterceptors(
         FileFieldsInterceptor([{ name: "images", maxCount: 5 }], {
             limits: {
-                fileSize: 15 * 1024 * 1024 // 15MB
+                fileSize: 50 * 1024 * 1024, // 50MB por arquivo
+                files: 5 // máximo de 5 arquivos
             },
             fileFilter: (req, file, callback) => {
                 const allowedMimeTypes = [
