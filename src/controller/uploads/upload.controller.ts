@@ -71,6 +71,14 @@ export class ImagesController {
         const entrepreneurId = body.entrepreneurId
         const imagePaths = []
 
+        // Log para debug
+        if (files && files.images) {
+            files.images.forEach((file, index) => {
+                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2)
+                console.log(`📤 Arquivo ${index + 1}: ${file.originalname}, Tamanho: ${sizeInMB}MB, Tipo: ${file.mimetype}`)
+            })
+        }
+
         for (const file of files.images) {
             const imagePath = await this.imagesService.uploadImage(
                 file,
