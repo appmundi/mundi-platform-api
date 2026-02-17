@@ -68,26 +68,53 @@ export class ImagesController {
         @UploadedFiles() files,
         @Body() body: { entrepreneurId: number }
     ) {
-        const entrepreneurId = body.entrepreneurId
-        const imagePaths = []
+        try {
+            console.log('📥 Upload iniciado:', {
+                hasFiles: !!files,
+                filesCount: files?.images?.length || 0,
+                entrepreneurId: body?.entrepreneurId
+            })
 
-        // Log para debug
-        if (files && files.images) {
+            if (!files || !files.images || files.images.length === 0) {
+                throw new Error('Nenhuma imagem foi enviada')
+            }
+
+            const entrepreneurId = body.entrepreneurId
+            if (!entrepreneurId) {
+                throw new Error('entrepreneurId é obrigatório')
+            }
+
+            const imagePaths = []
+
+            // Log para debug
             files.images.forEach((file, index) => {
                 const sizeInMB = (file.size / (1024 * 1024)).toFixed(2)
                 console.log(`📤 Arquivo ${index + 1}: ${file.originalname}, Tamanho: ${sizeInMB}MB, Tipo: ${file.mimetype}`)
             })
-        }
 
-        for (const file of files.images) {
-            const imagePath = await this.imagesService.uploadImage(
-                file,
-                entrepreneurId
-            )
-            imagePaths.push(imagePath)
-        }
+            for (const file of files.images) {
+                try {
+                    const imagePath = await this.imagesService.uploadImage(
+                        file,
+                        entrepreneurId
+                    )
+                    imagePaths.push(imagePath)
+                } catch (error) {
+                    console.error(`❌ Erro ao processar arquivo ${file.originalname}:`, error)
+                    throw error
+                }
+            }
 
-        return { success: true, imagePaths }
+            console.log('✅ Upload concluído com sucesso')
+            return { success: true, imagePaths }
+        } catch (error) {
+            console.error('❌ Erro no upload:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            })
+            throw error
+        }
     }
 
     @Get("byEntrepreneur/:entrepreneurId")
