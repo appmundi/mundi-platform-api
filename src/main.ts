@@ -4,7 +4,6 @@ import { AppModule } from "./app.module"
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger"
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import * as express from 'express';
 
 
 
@@ -12,16 +11,7 @@ declare const module: any
 
 
 async function bootstrap() {
-    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-        bodyParser: false // Desabilita o bodyParser padrão para configurarmos manualmente
-    });
-
-    // Configurar limite de tamanho do body para 50MB (para uploads de imagens)
-    // IMPORTANTE: A ordem importa! Deve vir antes de qualquer rota
-    app.use(express.json({ limit: '50mb' }));
-    app.use(express.urlencoded({ limit: '50mb', extended: true }));
-    // Para multipart/form-data, o limite é configurado no Multer interceptor
-    console.log('✅ Limite de upload configurado: 50MB');
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
     // Configurar arquivos estáticos
     const uploadsPath = join(__dirname, '..', 'uploads');
@@ -61,6 +51,3 @@ async function bootstrap() {
     }
 }
 bootstrap();
-
-
-

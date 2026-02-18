@@ -63,45 +63,17 @@ export class ImagesService {
     }
 
     async storeImage(image: Express.Multer.File): Promise<ImageDTO> {
+        const fileName = `${Date.now()}-${image.originalname}`
+        const uploadFolder = path.resolve(
+            __dirname,
+            "../../../src/controller/uploads/images"
+        )
+
+        const filePath = path.join(uploadFolder, fileName)
+
+        fs.mkdirSync(uploadFolder, { recursive: true })
+
         try {
-            if (!image || !image.buffer) {
-                throw new Error("Arquivo de imagem inválido ou vazio")
-            }
-
-            console.log(`📦 Processando imagem: ${image.originalname}, Tamanho: ${(image.buffer.length / 1024 / 1024).toFixed(2)}MB`)
-
-            // Remove a extensão original e adiciona .jpg, já que sempre convertemos para JPEG
-            const originalNameWithoutExt = image.originalname.replace(/\.[^/.]+$/, "")
-            const fileName = `${Date.now()}-${originalNameWithoutExt}.jpg`
-            
-            // Usar caminho absoluto baseado em process.cwd() para funcionar em produção
-            const uploadFolder = path.resolve(
-                process.cwd(),
-                "src",
-                "controller",
-                "uploads",
-                "images"
-            )
-
-            console.log(`📁 Pasta de upload: ${uploadFolder}`)
-
-            const filePath = path.join(uploadFolder, fileName)
-
-            // Criar pasta se não existir
-            if (!fs.existsSync(uploadFolder)) {
-                fs.mkdirSync(uploadFolder, { recursive: true })
-                console.log(`✅ Pasta criada: ${uploadFolder}`)
-            }
-
-            // Verificar permissão de escrita
-            try {
-                fs.accessSync(uploadFolder, fs.constants.W_OK as number)
-            } catch (error) {
-                throw new Error(`Sem permissão de escrita na pasta: ${uploadFolder}`)
-            }
-
-            // Converte qualquer formato de imagem (HEIC, HEIF, PNG, etc.) para JPEG
-            console.log(`🔄 Convertendo imagem para JPEG...`)
             const compressedBuffer = await sharp(image.buffer)
                 .jpeg({
                     quality: 80,
@@ -109,24 +81,17 @@ export class ImagesService {
                 })
                 .toBuffer()
 
-            console.log(`💾 Salvando arquivo: ${fileName}`)
-            fs.writeFileSync(filePath, Uint8Array.from(compressedBuffer))
+            fs.writeFileSync(filePath, compressedBuffer)
 
             const base64Image = compressedBuffer.toString("base64")
-            console.log(`✅ Imagem processada com sucesso: ${fileName}`)
 
             return {
                 bytes: base64Image,
                 name: fileName
             }
         } catch (error) {
-            console.error("❌ Erro ao processar imagem:", {
-                message: error.message,
-                stack: error.stack,
-                originalname: image?.originalname,
-                bufferSize: image?.buffer?.length
-            })
-            throw new Error(`Erro ao processar imagem: ${error.message}`)
+            console.error("Erro ao processar imagem:", error)
+            throw error
         }
     }
 
