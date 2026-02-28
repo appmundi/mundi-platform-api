@@ -249,18 +249,13 @@ export class SchedulingService {
         date: string,
         duration: number
     ): Promise<string[]> {
-        const dateObj: DateTime = DateTime.fromISO(date, {
-            setZone: "America/Sao_Paulo"
-        })
+        const dateObj = DateTime.fromISO(date, { zone: "America/Sao_Paulo" })
+        if (!dateObj.isValid) {
+            throw new Error("Data informada inválida")
+        }
 
-        const startOfDay = DateTime.fromISO(date, { zone: "utc" })
-            .startOf("day")
-            .toUTC()
-            .toJSDate()
-        const endOfDay = DateTime.fromISO(date, { zone: "utc" })
-            .endOf("day")
-            .toUTC()
-            .toJSDate()
+        const startOfDay = dateObj.startOf("day").toUTC().toJSDate()
+        const endOfDay = dateObj.endOf("day").toUTC().toJSDate()
 
         const scheduledAppointments = await this.scheduleRepository.find({
             where: {
@@ -303,20 +298,20 @@ export class SchedulingService {
         )
 
         const occupiedTimes = scheduledAppointments.flatMap((schedule) => {
-            const start = DateTime.fromISO(schedule.scheduledDate.toISOString());
-            const end = start.plus({ seconds: schedule.modality.duration });
+            const start = DateTime.fromJSDate(schedule.scheduledDate, {
+                zone: "utc"
+            }).setZone("America/Sao_Paulo")
+            const end = start.plus({ seconds: schedule.modality.duration })
 
-            const times = [];
-            let current = start;
-            console.log(start, end);
-            console.log(current);
+            const times = []
+            let current = start
             while (current < end) {
-                times.push(current.toFormat("HH:mm"));
-                current = current.plus({ minutes: 30 });
+                times.push(current.toFormat("HH:mm"))
+                current = current.plus({ minutes: 30 })
             }
 
-            return times;
-        });
+            return times
+        })
 
         const blockSize = duration / 30
         const availableTimes: string[] = []

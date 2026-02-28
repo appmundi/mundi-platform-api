@@ -14,6 +14,7 @@ import {
 import { SchedulingService } from "./scheduling.service"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
+import { DateTime } from "luxon"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { Modality } from "../modality/entities/modality.entity"
@@ -65,14 +66,7 @@ export class SchedulingController {
     
             const userId = decodedToken.id;
             console.log("Recebido scheduledDate:", body.scheduledDate);
-            const scheduledDate = new Date(body.scheduledDate);
-    
-            if (isNaN(scheduledDate.getTime())) {
-                throw new HttpException(
-                    { status: HttpStatus.BAD_REQUEST, error: "Data agendada inválida" },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
+            const scheduledDate = this.parseScheduledDate(body.scheduledDate)
     
         
             const isAvailable = await this.schedulingService.isTimeAvailable(
@@ -452,8 +446,22 @@ export class SchedulingController {
         @Query("date") date: string,
         @Query("duration") duration: number,
     ): Promise<string[]> {
-        const dateObject = new Date(date);
-        const dateString = dateObject.toISOString(); 
-        return this.schedulingService.getAvailableTimes(entrepreneurId, dateString, duration); 
+        return this.schedulingService.getAvailableTimes(entrepreneurId, date, duration)
+    }
+
+    private parseScheduledDate(scheduledDate: string): Date {
+        const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(scheduledDate)
+        const parsedDate = hasTimezone
+            ? DateTime.fromISO(scheduledDate, { setZone: true })
+            : DateTime.fromISO(scheduledDate, { zone: "America/Sao_Paulo" })
+
+        if (!parsedDate.isValid) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Data agendada inválida" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        return parsedDate.toUTC().toJSDate()
     }
 }
