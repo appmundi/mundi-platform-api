@@ -153,12 +153,10 @@ export class UserService {
         }
         const manager = this.userRepository.manager
         await manager.transaction(async (transactionalEntityManager) => {
-            await transactionalEntityManager
-                .createQueryBuilder()
-                .delete()
-                .from(Schedule)
-                .where("userId = :id", { id: userId })
-                .execute()
+            // Exclui os agendamentos (Schedule) que referenciam este usuário
+            await transactionalEntityManager.delete(Schedule, {
+                user: { userId },
+            })
             await transactionalEntityManager.remove(User, user)
         })
     }
