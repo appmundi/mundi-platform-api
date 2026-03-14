@@ -37,6 +37,7 @@ export class EntrepreneurService {
                 "LOWER(entrepreneur.name) LIKE :query OR " +
                     "LOWER(entrepreneur.address) LIKE :query OR " +
                     "LOWER(entrepreneur.companyName) LIKE :query OR " +
+                    "LOWER(entrepreneur.description) LIKE :query OR " +
                     "LOWER(work.service) LIKE :query OR " +
                     "LOWER(modality.title) LIKE :query",
                 { query: `%${query.toLowerCase()}%` }
@@ -174,6 +175,7 @@ export class EntrepreneurService {
         entrepreneur.valueDeslocation = data.valueDeslocation
         entrepreneur.operation = data.operation
         entrepreneur.status = data.status
+        entrepreneur.description = data.description || null
         entrepreneur.category = [category];
 
         /*const fileName = `${Date.now()}-${data.image.originalname}`;
@@ -243,6 +245,7 @@ export class EntrepreneurService {
         entrepreneur.valueDeslocation = updateUserDto.valueDeslocation
         entrepreneur.operation = updateUserDto.operation
         entrepreneur.work = updateUserDto.work
+        entrepreneur.description = updateUserDto.description
         return this.entrepreneurRepository.save(entrepreneur)
     }
 
@@ -255,12 +258,93 @@ export class EntrepreneurService {
     }
 
     async findOneById(entrepreneurId: number): Promise<Entrepreneur | null> {
-        const entrepreneur = await this.entrepreneurRepository
-            .createQueryBuilder()
-            .select(`getEntrepreneurData(${entrepreneurId})`, "entrepreneur")
-            .getRawOne()
-        console.log(entrepreneur)
-        return entrepreneur.entrepreneur
+        const results = await this.entrepreneurRepository.query(
+            `SELECT JSON_OBJECT(
+                'entrepreneurId', e.entrepreneurId,
+                'name', e.name,
+                'email', e.email,
+                'document', e.doc,
+                'phone', e.phone,
+                'operation', e.operation,
+                'companyName', e.companyName,
+                'address', e.address,
+                'description', e.description,
+                'distance', e.deslocation,
+                'addressNumber', e.addressNumber,
+                'latitude', e.latitude,
+                'longitude', e.longitude,
+                'optionwork', e.optionwork,
+                'rating', (
+                    SELECT AVG(av.rating)
+                    FROM avaliation av
+                    WHERE av.entrepreneurEntrepreneurId = e.entrepreneurId
+                ),
+                'numberOfAvaliations', (
+                    SELECT COUNT(*)
+                    FROM avaliation
+                    WHERE avaliation.entrepreneurEntrepreneurId = e.entrepreneurId
+                ),
+                'cep', e.cep,
+                'city', e.city,
+                'state', e.state,
+                'avaliation', (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', av.id,
+                            'name', av.name,
+                            'rating', av.rating,
+                            'comment', av.comment
+                        )
+                    )
+                    FROM avaliation av
+                    WHERE av.entrepreneurEntrepreneurId = e.entrepreneurId
+                ),
+                'works', (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', w.id,
+                            'service', w.service,
+                            'modalities', (
+                                SELECT JSON_ARRAYAGG(
+                                    JSON_OBJECT(
+                                        'id', m.id,
+                                        'title', m.title,
+                                        'duration', m.duration,
+                                        'price', m.price
+                                    )
+                                )
+                                FROM modality AS m
+                                WHERE m.workId = w.id
+                            )
+                        )
+                    )
+                    FROM work AS w
+                    WHERE w.entrepreneurEntrepreneurId = e.entrepreneurId
+                      AND w.active = 1
+                ),
+                'category', (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', c.id,
+                            'type', c.type
+                        )
+                    )
+                    FROM entrepreneur_category_category ec
+                    LEFT JOIN category c ON ec.categoryId = c.id
+                    WHERE ec.entrepreneurEntrepreneurId = e.entrepreneurId
+                ),
+                'profileImage', e.profileImage,
+                'images', (
+                    SELECT JSON_ARRAYAGG(i.id)
+                    FROM image i
+                    WHERE i.entrepreneurEntrepreneurId = e.entrepreneurId
+                )
+            ) AS entrepreneur
+            FROM entrepreneur AS e
+            WHERE e.entrepreneurId = ?`,
+            [entrepreneurId]
+        )
+        return results[0]?.entrepreneur ?? null
     }
 
     async deleteUser(entrepreneurId: number): Promise<void> {
