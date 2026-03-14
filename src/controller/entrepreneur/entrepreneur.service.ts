@@ -360,6 +360,12 @@ export class EntrepreneurService {
         }
         const manager = this.entrepreneurRepository.manager
         await manager.transaction(async (transactionalEntityManager) => {
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Schedule)
+                .where("entrepreneurEntrepreneurId = :id", { id: entrepreneurId })
+                .execute()
             const works = await transactionalEntityManager.find(Work, {
                 where: { entrepreneur: { entrepreneurId } },
                 select: ["id"],
@@ -376,32 +382,32 @@ export class EntrepreneurService {
             await transactionalEntityManager
                 .createQueryBuilder()
                 .delete()
-                .from(Schedule)
-                .where("entrepreneurId = :id", { id: entrepreneurId })
-                .execute()
-            await transactionalEntityManager
-                .createQueryBuilder()
-                .delete()
                 .from(Work)
-                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .where("entrepreneurEntrepreneurId = :id", { id: entrepreneurId })
                 .execute()
             await transactionalEntityManager
                 .createQueryBuilder()
                 .delete()
                 .from(Image)
-                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .where("entrepreneurEntrepreneurId = :id", { id: entrepreneurId })
                 .execute()
             await transactionalEntityManager
                 .createQueryBuilder()
                 .delete()
                 .from(Avaliation)
-                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .where("entrepreneurEntrepreneurId = :id", { id: entrepreneurId })
                 .execute()
             await transactionalEntityManager
                 .createQueryBuilder()
                 .delete()
                 .from(Client)
-                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .where("entrepreneurEntrepreneurId = :id", { id: entrepreneurId })
+                .execute()
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from("entrepreneur_category_category")
+                .where("entrepreneurEntrepreneurId = :id", { id: entrepreneurId })
                 .execute()
             await transactionalEntityManager.remove(Entrepreneur, entrepreneur)
         })
