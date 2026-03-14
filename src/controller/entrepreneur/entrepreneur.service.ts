@@ -9,11 +9,14 @@ import { ResultDto } from "src/dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
 import { In, Repository } from "typeorm"
-import * as bcrypt from "bcrypt"
-import { Work } from "../work/entities/work.entity"
-import { Category } from "../category/entities/category.entity"
 import { Schedule } from "../scheduling/entities/scheduling.entity"
+import { Work } from "../work/entities/work.entity"
 import { Image } from "../uploads/entities/upload.entity"
+import { Avaliation } from "../avaliation/entities/avaliation.entity"
+import { Client } from "../registerClient/entities/client.entity"
+import { Modality } from "../modality/entities/modality.entity"
+import * as bcrypt from "bcrypt"
+import { Category } from "../category/entities/category.entity"
 
 @Injectable()
 export class EntrepreneurService {
@@ -271,7 +274,53 @@ export class EntrepreneurService {
                 HttpStatus.BAD_REQUEST
             )
         }
-        await this.entrepreneurRepository.remove(entrepreneur)
+        const manager = this.entrepreneurRepository.manager
+        await manager.transaction(async (transactionalEntityManager) => {
+            const works = await transactionalEntityManager.find(Work, {
+                where: { entrepreneur: { entrepreneurId } },
+                select: ["id"],
+            })
+            const workIds = works.map((w) => w.id)
+            if (workIds.length > 0) {
+                await transactionalEntityManager
+                    .createQueryBuilder()
+                    .delete()
+                    .from(Modality)
+                    .where("workId IN (:...ids)", { ids: workIds })
+                    .execute()
+            }
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Schedule)
+                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .execute()
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Work)
+                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .execute()
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Image)
+                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .execute()
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Avaliation)
+                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .execute()
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Client)
+                .where("entrepreneurId = :id", { id: entrepreneurId })
+                .execute()
+            await transactionalEntityManager.remove(Entrepreneur, entrepreneur)
+        })
     }
 
     async updateWork(id: number, workData: Partial<Work[]>): Promise<void> {

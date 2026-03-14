@@ -1,6 +1,7 @@
 import { Injectable, Inject, HttpException, HttpStatus, NotFoundException } from "@nestjs/common"
 import { Repository } from "typeorm"
 import { User } from "./entities/user.entity"
+import { Schedule } from "../scheduling/entities/scheduling.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
 import { ResultDto } from "src/dto/result.dto"
 import * as bcrypt from "bcrypt"
@@ -150,7 +151,16 @@ export class UserService {
                 HttpStatus.BAD_REQUEST
             )
         }
-        await this.userRepository.remove(user)
+        const manager = this.userRepository.manager
+        await manager.transaction(async (transactionalEntityManager) => {
+            await transactionalEntityManager
+                .createQueryBuilder()
+                .delete()
+                .from(Schedule)
+                .where("userId = :id", { id: userId })
+                .execute()
+            await transactionalEntityManager.remove(User, user)
+        })
     }
 
     async findOneByEmail(email: string): Promise<User | null> {
