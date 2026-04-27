@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNumber, IsBoolean, IsJSON, } from "class-validator"
+import { IsString, IsEmail, IsNumber, IsBoolean, IsJSON, IsOptional, MaxLength } from "class-validator"
 import { Image } from "src/controller/uploads/entities/upload.entity"
 import {
     OneToMany,
@@ -64,4 +64,9 @@ export class CreateEntrepreneurDto {
     readonly category: string
 
     readonly image: Express.Multer.File;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000, { message: "A descrição deve ter no máximo 1000 caracteres" })
+    readonly description?: string;
 }

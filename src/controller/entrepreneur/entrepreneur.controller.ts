@@ -94,7 +94,14 @@ export class EntrepreneurController {
     @UseGuards(JwtAuthGuard)
     @Delete(":id")
     async deleteUser(@Param("id") id: number): Promise<void> {
-        return this.entrepreneurService.deleteUser(id)
+        console.log('[API] DELETE entrepreneur/:id - recebido id=', id)
+        try {
+            await this.entrepreneurService.deleteUser(id)
+            console.log('[API] DELETE entrepreneur/:id - sucesso')
+        } catch (e) {
+            console.error('[API] DELETE entrepreneur/:id - erro:', e)
+            throw e
+        }
     }
     @Post("login")
     async login(

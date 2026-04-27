@@ -61,7 +61,7 @@ export class AuthService {
     }
 
     async login(userId: string, username: string) {
-        const payload = { id: userId, username: username }
+        const payload = { sub: userId, id: userId, username: username }
         console.log("Payload", payload)
         return {
             status: true,
