@@ -23,7 +23,7 @@ export class WorkController {
     @Post(":id/work")
     async workFreelancer(
         @Param("id") entrepreneurId: number,
-        @Body() workData: { service: string; value: number }
+        @Body() workData: { service: string; value: number; duration: number }
     ) {
         try {
             const work = await this.workService.createWork(
@@ -36,11 +36,11 @@ export class WorkController {
                 work.id
             )
 
-           
+
             const modality = await this.modalityService.createModality(
                 findWork.id,
                 workData.value,
-                1800,
+                workData.duration ?? 1800,
                 workData.service
             )
            
