@@ -169,6 +169,7 @@ export class SchedulingController {
                 entrepreneur.city = scheduleResponse.entrepreneur.city
                 entrepreneur.state = scheduleResponse.entrepreneur.state
                 entrepreneur.phone = scheduleResponse.entrepreneur.phone
+                entrepreneur.optionwork = scheduleResponse.entrepreneur.optionwork
 
                 schedule.entrepreneur = entrepreneur
 
