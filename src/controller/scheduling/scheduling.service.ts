@@ -3,9 +3,9 @@ import {
     Inject,
     HttpException,
     HttpStatus,
+    Logger,
     NotFoundException,
-    Param,
-    Query
+    Optional
 } from "@nestjs/common"
 import { Repository, In, Between } from "typeorm"
 import { User } from "../user/entities/user.entity"
@@ -14,9 +14,12 @@ import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import { Modality } from "../modality/entities/modality.entity"
 import { DateTime } from "luxon"
 import { Avaliation } from "../avaliation/entities/avaliation.entity"
+import { NotificationsService } from "../notifications/notifications.service"
 
 @Injectable()
 export class SchedulingService {
+    private readonly logger = new Logger(SchedulingService.name)
+
     constructor(
         @Inject("USER_REPOSITORY")
         private userRepository: Repository<User>,
@@ -27,8 +30,14 @@ export class SchedulingService {
         @Inject("MODALITY_REPOSITORY")
         private modalityRepository: Repository<Modality>,
         @Inject("AVALIATION_REPOSITORY")
-        private avaliationRepository: Repository<Avaliation>
-    ) {}
+        private avaliationRepository: Repository<Avaliation>,
+        @Optional()
+        private readonly notificationsService?: NotificationsService
+    ) {
+        if (!notificationsService) {
+            this.logger.warn("NotificationsService not injected — push notifications disabled")
+        }
+    }
 
     async isTimeSlotAvailable(
         entrepreneurId: number,
@@ -46,10 +55,14 @@ export class SchedulingService {
 
     async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
         console.log("Trying to find the Schedule")
-        const agenda = await this.scheduleRepository.findOne({ where: { id }, relations: {
-            entrepreneur: true,
-            user: true,
-        } })
+        const agenda = await this.scheduleRepository.findOne({
+            where: { id },
+            relations: {
+                entrepreneur: true,
+                user: true,
+                modality: true
+            }
+        })
 
         if (!agenda) {
             throw new NotFoundException(`Agenda with ID ${id} not found`)
@@ -67,13 +80,47 @@ export class SchedulingService {
 
             if (avaliation.length > 0) {
                 agenda.status = AgendaStatus.FINISHED
-                return this.scheduleRepository.save(agenda)
+                const saved = await this.scheduleRepository.save(agenda)
+                await this.notificationsService?.notifyServiceStep(
+                    agenda.user.userId,
+                    "finished",
+                    {
+                        scheduleId: id,
+                        providerName: agenda.entrepreneur.name,
+                        modalityTitle: agenda.modality?.title ?? ""
+                    }
+                )
+                return saved
             }
         }
 
         agenda.status = newStatus
         console.log("Trying to update the Schedule")
-        return this.scheduleRepository.save(agenda)
+        const saved = await this.scheduleRepository.save(agenda)
+
+        if (newStatus === AgendaStatus.STARTED) {
+            await this.notificationsService?.notifyServiceStep(
+                agenda.user.userId,
+                "started",
+                {
+                    scheduleId: id,
+                    providerName: agenda.entrepreneur.name,
+                    modalityTitle: agenda.modality?.title ?? ""
+                }
+            )
+        } else if (newStatus === AgendaStatus.FINISHED) {
+            await this.notificationsService?.notifyServiceStep(
+                agenda.user.userId,
+                "finished",
+                {
+                    scheduleId: id,
+                    providerName: agenda.entrepreneur.name,
+                    modalityTitle: agenda.modality?.title ?? ""
+                }
+            )
+        }
+
+        return saved
     }
 
     async scheduleService(
@@ -208,7 +255,7 @@ export class SchedulingService {
     ): Promise<Schedule> {
         const schedule = await this.scheduleRepository.findOne({
             where: { id: scheduleId },
-            relations: ["user", "entrepreneur"]
+            relations: ["user", "entrepreneur", "modality"]
         })
 
         if (!schedule) {
@@ -216,16 +263,88 @@ export class SchedulingService {
         }
 
         if (
-            schedule.user.userId !== userId &&
-            schedule.entrepreneur.entrepreneurId !== userId
+            schedule.status === AgendaStatus.CANCELED ||
+            schedule.status === AgendaStatus.FINISHED
         ) {
+            throw new Error(
+                `Agendamento já encerrado com status: ${schedule.status}`
+            )
+        }
+
+        const isUser = schedule.user.userId === userId
+        const isEntrepreneur = schedule.entrepreneur.entrepreneurId === userId
+
+        if (!isUser && !isEntrepreneur) {
             throw new Error(
                 "Usuário não tem permissão para cancelar este agendamento"
             )
         }
 
         schedule.status = AgendaStatus.CANCELED
-        return await this.scheduleRepository.save(schedule)
+        const saved = await this.scheduleRepository.save(schedule)
+
+        // Notify the OTHER party
+        if (isUser) {
+            await this.notificationsService?.notifyCancellation(
+                "entrepreneur",
+                schedule.entrepreneur.entrepreneurId,
+                {
+                    scheduleId,
+                    serviceName: schedule.modality?.title ?? "Serviço",
+                    cancellerName: schedule.user.name,
+                    cancellerRole: "user",
+                    appointmentDatetime: schedule.scheduledDate
+                }
+            )
+        } else {
+            await this.notificationsService?.notifyCancellation(
+                "user",
+                schedule.user.userId,
+                {
+                    scheduleId,
+                    serviceName: schedule.modality?.title ?? "Serviço",
+                    cancellerName: schedule.entrepreneur.name,
+                    cancellerRole: "entrepreneur",
+                    appointmentDatetime: schedule.scheduledDate
+                }
+            )
+        }
+
+        return saved
+    }
+
+    async notifyEnRoute(
+        scheduleId: number,
+        entrepreneurId: number
+    ): Promise<void> {
+        const schedule = await this.scheduleRepository.findOne({
+            where: { id: scheduleId },
+            relations: { user: true, entrepreneur: true, modality: true }
+        })
+
+        if (!schedule) {
+            throw new NotFoundException(`Agendamento ${scheduleId} não encontrado`)
+        }
+
+        if (schedule.entrepreneur.entrepreneurId !== entrepreneurId) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.FORBIDDEN,
+                    error: "Acesso negado a este agendamento"
+                },
+                HttpStatus.FORBIDDEN
+            )
+        }
+
+        await this.notificationsService?.notifyServiceStep(
+            schedule.user.userId,
+            "en_route",
+            {
+                scheduleId,
+                providerName: schedule.entrepreneur.name,
+                modalityTitle: schedule.modality?.title ?? ""
+            }
+        )
     }
 
     async isTimeAvailable(
@@ -263,7 +382,7 @@ export class SchedulingService {
                 scheduledDate: Between(startOfDay, endOfDay)
             },
             relations: {
-                modality: true,
+                modality: true
             }
         })
 

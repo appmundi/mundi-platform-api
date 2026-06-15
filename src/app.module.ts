@@ -12,6 +12,7 @@ import { UploadModule } from "./controller/uploads/upload.module"
 import { ModalityModule } from "./controller/modality/modality.module"
 import { CategoryModule } from "./controller/category/category.module"
 import { registerClientModule } from "./controller/registerClient/client.module"
+import { NotificationsModule } from "./controller/notifications/notifications.module"
 
 require("dotenv").config()
 
@@ -27,7 +28,8 @@ require("dotenv").config()
         UploadModule,
         ModalityModule,
         CategoryModule,
-        registerClientModule
+        registerClientModule,
+        NotificationsModule
     ],
     controllers: [AppController],
     providers: [AppService]

@@ -189,8 +189,26 @@ export class SchedulingController {
     @Put(":id/update-status")
     async updateStatus(
         @Param("id") id: number,
-        @Body("status") newStatus: AgendaStatus
+        @Body("status") newStatus: AgendaStatus,
+        @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken?.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
         if (
             ![
                 AgendaStatus.INIT,
@@ -439,6 +457,42 @@ export class SchedulingController {
     }
 
 
+
+    @Post(":id/notify-en-route")
+    async notifyEnRoute(
+        @Param("id") scheduleId: number,
+        @Headers("authorization") authorizationHeader: string
+    ): Promise<{ message: string }> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken?.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        try {
+            await this.schedulingService.notifyEnRoute(
+                Number(scheduleId),
+                decodedToken.id
+            )
+            return { message: "Notificação enviada com sucesso" }
+        } catch (error) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: error.message },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+    }
 
     @Get(":entrepreneurId/available-times")
     async getAvailableTimes(
