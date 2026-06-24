@@ -25,6 +25,7 @@ export class DeviceTokenService {
             .into(DeviceToken)
             .values({ token, platform, ownerType, ownerId, appVersion: appVersion ?? null })
             .orUpdate(["platform", "ownerType", "ownerId", "appVersion"], ["token"])
+            .updateEntity(false)
             .execute()
     }
 

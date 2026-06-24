@@ -78,20 +78,26 @@ export class SchedulingService {
                 }
             })
 
-            if (avaliation.length > 0) {
-                agenda.status = AgendaStatus.FINISHED
-                const saved = await this.scheduleRepository.save(agenda)
-                await this.notificationsService?.notifyServiceStep(
-                    agenda.user.userId,
-                    "finished",
-                    {
-                        scheduleId: id,
-                        providerName: agenda.entrepreneur.name,
-                        modalityTitle: agenda.modality?.title ?? ""
-                    }
-                )
-                return saved
-            }
+            // Finalizing the service: keep FINISHED when a review already exists,
+            // otherwise move to FEEDBACK so the client can still rate. Either way
+            // the service is over for the client, so always send the "finished"
+            // step — this replaces the ongoing "started" notification on their
+            // device (which is locked and can't be dismissed otherwise).
+            agenda.status =
+                avaliation.length > 0
+                    ? AgendaStatus.FINISHED
+                    : AgendaStatus.FEEDBACK
+            const saved = await this.scheduleRepository.save(agenda)
+            await this.notificationsService?.notifyServiceStep(
+                agenda.user.userId,
+                "finished",
+                {
+                    scheduleId: id,
+                    providerName: agenda.entrepreneur.name,
+                    modalityTitle: agenda.modality?.title ?? ""
+                }
+            )
+            return saved
         }
 
         agenda.status = newStatus
@@ -200,6 +206,21 @@ export class SchedulingService {
             )
         }
 
+        // Notify the entrepreneur that a client just booked with them.
+        if (createdSchedules.length > 0) {
+            const serviceName =
+                orderedModalities.length > 1
+                    ? `${orderedModalities[0].title} +${orderedModalities.length - 1}`
+                    : orderedModalities[0]?.title ?? "Serviço"
+
+            await this.notificationsService?.notifyNewBooking(entrepreneurId, {
+                scheduleId: createdSchedules[0].id,
+                serviceName,
+                clientName: user.name,
+                appointmentDatetime: baseDateTime
+            })
+        }
+
         return {
             message: "Agendamentos criados com sucesso.",
             schedules: createdSchedules.map((schedule) => ({
@@ -251,7 +272,9 @@ export class SchedulingService {
 
     async cancelSchedule(
         scheduleId: number,
-        userId: number
+        callerId: number,
+        cancellerType?: "user" | "entrepreneur",
+        callerName?: string
     ): Promise<Schedule> {
         const schedule = await this.scheduleRepository.findOne({
             where: { id: scheduleId },
@@ -271,10 +294,25 @@ export class SchedulingService {
             )
         }
 
-        const isUser = schedule.user.userId === userId
-        const isEntrepreneur = schedule.entrepreneur.entrepreneurId === userId
+        // user and entrepreneur IDs come from independent sequences and can
+        // collide (both can be 1), so id comparison alone can't tell who
+        // cancelled. Prefer the explicit role sent by the app; fall back to
+        // matching the JWT name for older builds.
+        let cancelledByUser: boolean
+        if (cancellerType === "user" || cancellerType === "entrepreneur") {
+            cancelledByUser = cancellerType === "user"
+        } else if (callerName && schedule.entrepreneur.name === callerName) {
+            cancelledByUser = false
+        } else if (callerName && schedule.user.name === callerName) {
+            cancelledByUser = true
+        } else {
+            cancelledByUser = schedule.user.userId === callerId
+        }
 
-        if (!isUser && !isEntrepreneur) {
+        const belongsToCaller =
+            schedule.user.userId === callerId ||
+            schedule.entrepreneur.entrepreneurId === callerId
+        if (!belongsToCaller) {
             throw new Error(
                 "Usuário não tem permissão para cancelar este agendamento"
             )
@@ -284,7 +322,7 @@ export class SchedulingService {
         const saved = await this.scheduleRepository.save(schedule)
 
         // Notify the OTHER party
-        if (isUser) {
+        if (cancelledByUser) {
             await this.notificationsService?.notifyCancellation(
                 "entrepreneur",
                 schedule.entrepreneur.entrepreneurId,

@@ -9,6 +9,7 @@ import { UserProviders } from "../user/user.providers"
 import { EntrepreneurProviders } from "../entrepreneur/entrepreneur.providers"
 import { ModalityProviders } from "../modality/modality.providers"
 import { NotificationsModule } from "../notifications/notifications.module"
+import { DailyAgendaCron } from "./daily_agenda.cron"
 
 @Module({
     imports: [
@@ -23,6 +24,7 @@ import { NotificationsModule } from "../notifications/notifications.module"
     controllers: [SchedulingController],
     providers: [
         SchedulingService,
+        DailyAgendaCron,
         ...ScheduleProviders,
         ...UserProviders,
         ...EntrepreneurProviders,
