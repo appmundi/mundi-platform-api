@@ -190,8 +190,26 @@ export class SchedulingController {
     @Put(":id/update-status")
     async updateStatus(
         @Param("id") id: number,
-        @Body("status") newStatus: AgendaStatus
+        @Body("status") newStatus: AgendaStatus,
+        @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken?.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
         if (
             ![
                 AgendaStatus.INIT,
@@ -203,6 +221,27 @@ export class SchedulingController {
         ) {
             throw new NotFoundException(`Invalid status: ${newStatus}`)
         }
+
+        // Cancellation must go through cancelSchedule so the OTHER party gets a
+        // push notification (updateStatus does not notify on CANCELED). This
+        // route is used by the entrepreneur app, so the canceller is the
+        // entrepreneur.
+        if (newStatus === AgendaStatus.CANCELED) {
+            try {
+                return await this.schedulingService.cancelSchedule(
+                    id,
+                    decodedToken.id,
+                    "entrepreneur",
+                    decodedToken.username
+                )
+            } catch (error) {
+                throw new HttpException(
+                    { status: HttpStatus.BAD_REQUEST, error: error.message },
+                    HttpStatus.BAD_REQUEST
+                )
+            }
+        }
+
         return this.schedulingService.updateStatus(id, newStatus)
     }
 
@@ -407,6 +446,7 @@ export class SchedulingController {
     @Post(":id/cancel")
     async cancelSchedule(
         @Param("id") scheduleId: number,
+        @Body("cancellerType") cancellerType: "user" | "entrepreneur",
         @Headers("authorization") authorizationHeader: string
     ): Promise<{ message: string }> {
         if (!authorizationHeader) {
@@ -427,9 +467,13 @@ export class SchedulingController {
         }
 
         try {
+            // Both apps hit this endpoint, so the role is taken from the body
+            // (the JWT carries no role); decodedToken.username is the fallback.
             await this.schedulingService.cancelSchedule(
                 scheduleId,
-                decodedToken.id
+                decodedToken.id,
+                cancellerType,
+                decodedToken.username
             )
             return { message: "Agendamento cancelado com sucesso" }
         } catch (error) {
@@ -441,6 +485,42 @@ export class SchedulingController {
     }
 
 
+
+    @Post(":id/notify-en-route")
+    async notifyEnRoute(
+        @Param("id") scheduleId: number,
+        @Headers("authorization") authorizationHeader: string
+    ): Promise<{ message: string }> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken?.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        try {
+            await this.schedulingService.notifyEnRoute(
+                Number(scheduleId),
+                decodedToken.id
+            )
+            return { message: "Notificação enviada com sucesso" }
+        } catch (error) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: error.message },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+    }
 
     @Get(":entrepreneurId/available-times")
     async getAvailableTimes(

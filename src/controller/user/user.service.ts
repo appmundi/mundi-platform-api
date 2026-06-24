@@ -98,6 +98,7 @@ export class UserService {
                 }
             })
             .catch((error) => {
+                console.log(error)
                 return <ResultDto>{
                     status: false,
                     mensagem: "Erro ao cadastrar!"
