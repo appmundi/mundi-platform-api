@@ -47,4 +47,8 @@ export class CategoryService {
             entrepreneurId: category.entrepreneur.entrepreneurId
         }
     }
+
+    async findAll(): Promise<Category[]> {
+        return this.categoryRepository.find()
+    }
 }

@@ -31,6 +31,16 @@ export class CategoryController {
             throw new Error("Falha")
         }
     }
+    @Get()
+    async findAll() {
+        try {
+            const categories = await this.categoryService.findAll()
+            return categories
+        } catch (error) {
+            throw new Error("Falha ao buscar categorias")
+        }
+    }
+
     @Get(":type")
     async findOneByType(@Param("type") type: string) {
         try {

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common"
+import { ScheduleModule } from "@nestjs/schedule"
 import { AppController } from "./app.controller"
 import { AppService } from "./app.service"
 import { AuthModule } from "./auth/auth.module"
@@ -12,11 +13,13 @@ import { UploadModule } from "./controller/uploads/upload.module"
 import { ModalityModule } from "./controller/modality/modality.module"
 import { CategoryModule } from "./controller/category/category.module"
 import { registerClientModule } from "./controller/registerClient/client.module"
+import { NotificationsModule } from "./controller/notifications/notifications.module"
 
 require("dotenv").config()
 
 @Module({
     imports: [
+        ScheduleModule.forRoot(),
         AuthModule,
         UserModule,
         EntrepreneurModule,
@@ -27,7 +30,8 @@ require("dotenv").config()
         UploadModule,
         ModalityModule,
         CategoryModule,
-        registerClientModule
+        registerClientModule,
+        NotificationsModule
     ],
     controllers: [AppController],
     providers: [AppService]

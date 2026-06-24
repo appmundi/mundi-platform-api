@@ -48,6 +48,6 @@ export class User {
     @OneToMany(() => Schedule, (schedulling) => schedulling.user)
     schedulling: Schedule[]
 
-    @Column()
+    @Column({nullable: true, default: null})
     imageUrl: string
 }

@@ -132,7 +132,14 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     @Delete(":id")
     async deleteUser(@Param("id") id: number): Promise<void> {
-        return this.userService.deleteUser(id)
+        console.log('[API] DELETE user/:id - recebido id=', id)
+        try {
+            await this.userService.deleteUser(id)
+            console.log('[API] DELETE user/:id - sucesso')
+        } catch (e) {
+            console.error('[API] DELETE user/:id - erro:', e)
+            throw e
+        }
     }
 
     @Post("reset-password")

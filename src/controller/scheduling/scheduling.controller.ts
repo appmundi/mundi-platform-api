@@ -14,6 +14,7 @@ import {
 import { SchedulingService } from "./scheduling.service"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
+import { DateTime } from "luxon"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { Modality } from "../modality/entities/modality.entity"
@@ -65,14 +66,7 @@ export class SchedulingController {
     
             const userId = decodedToken.id;
             console.log("Recebido scheduledDate:", body.scheduledDate);
-            const scheduledDate = new Date(body.scheduledDate);
-    
-            if (isNaN(scheduledDate.getTime())) {
-                throw new HttpException(
-                    { status: HttpStatus.BAD_REQUEST, error: "Data agendada inválida" },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
+            const scheduledDate = this.parseScheduledDate(body.scheduledDate)
     
         
             const isAvailable = await this.schedulingService.isTimeAvailable(
@@ -175,6 +169,7 @@ export class SchedulingController {
                 entrepreneur.city = scheduleResponse.entrepreneur.city
                 entrepreneur.state = scheduleResponse.entrepreneur.state
                 entrepreneur.phone = scheduleResponse.entrepreneur.phone
+                entrepreneur.optionwork = scheduleResponse.entrepreneur.optionwork
 
                 schedule.entrepreneur = entrepreneur
 
@@ -195,8 +190,26 @@ export class SchedulingController {
     @Put(":id/update-status")
     async updateStatus(
         @Param("id") id: number,
-        @Body("status") newStatus: AgendaStatus
+        @Body("status") newStatus: AgendaStatus,
+        @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken?.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
         if (
             ![
                 AgendaStatus.INIT,
@@ -208,6 +221,27 @@ export class SchedulingController {
         ) {
             throw new NotFoundException(`Invalid status: ${newStatus}`)
         }
+
+        // Cancellation must go through cancelSchedule so the OTHER party gets a
+        // push notification (updateStatus does not notify on CANCELED). This
+        // route is used by the entrepreneur app, so the canceller is the
+        // entrepreneur.
+        if (newStatus === AgendaStatus.CANCELED) {
+            try {
+                return await this.schedulingService.cancelSchedule(
+                    id,
+                    decodedToken.id,
+                    "entrepreneur",
+                    decodedToken.username
+                )
+            } catch (error) {
+                throw new HttpException(
+                    { status: HttpStatus.BAD_REQUEST, error: error.message },
+                    HttpStatus.BAD_REQUEST
+                )
+            }
+        }
+
         return this.schedulingService.updateStatus(id, newStatus)
     }
 
@@ -268,6 +302,7 @@ export class SchedulingController {
                 entrepreneur.city = scheduleResponse.entrepreneur.city
                 entrepreneur.state = scheduleResponse.entrepreneur.state
                 entrepreneur.phone = scheduleResponse.entrepreneur.phone
+                entrepreneur.optionwork = scheduleResponse.entrepreneur.optionwork
                 schedule.entrepreneur = entrepreneur
                 schedule.description = scheduleResponse.description
                 schedule.addressComplement = scheduleResponse.addressComplement
@@ -411,6 +446,7 @@ export class SchedulingController {
     @Post(":id/cancel")
     async cancelSchedule(
         @Param("id") scheduleId: number,
+        @Body("cancellerType") cancellerType: "user" | "entrepreneur",
         @Headers("authorization") authorizationHeader: string
     ): Promise<{ message: string }> {
         if (!authorizationHeader) {
@@ -431,9 +467,13 @@ export class SchedulingController {
         }
 
         try {
+            // Both apps hit this endpoint, so the role is taken from the body
+            // (the JWT carries no role); decodedToken.username is the fallback.
             await this.schedulingService.cancelSchedule(
                 scheduleId,
-                decodedToken.id
+                decodedToken.id,
+                cancellerType,
+                decodedToken.username
             )
             return { message: "Agendamento cancelado com sucesso" }
         } catch (error) {
@@ -446,14 +486,64 @@ export class SchedulingController {
 
 
 
+    @Post(":id/notify-en-route")
+    async notifyEnRoute(
+        @Param("id") scheduleId: number,
+        @Headers("authorization") authorizationHeader: string
+    ): Promise<{ message: string }> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken?.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        try {
+            await this.schedulingService.notifyEnRoute(
+                Number(scheduleId),
+                decodedToken.id
+            )
+            return { message: "Notificação enviada com sucesso" }
+        } catch (error) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: error.message },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+    }
+
     @Get(":entrepreneurId/available-times")
     async getAvailableTimes(
         @Param("entrepreneurId") entrepreneurId: number,
         @Query("date") date: string,
         @Query("duration") duration: number,
     ): Promise<string[]> {
-        const dateObject = new Date(date);
-        const dateString = dateObject.toISOString(); 
-        return this.schedulingService.getAvailableTimes(entrepreneurId, dateString, duration); 
+        return this.schedulingService.getAvailableTimes(entrepreneurId, date, duration)
+    }
+
+    private parseScheduledDate(scheduledDate: string): Date {
+        const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(scheduledDate)
+        const parsedDate = hasTimezone
+            ? DateTime.fromISO(scheduledDate, { setZone: true })
+            : DateTime.fromISO(scheduledDate, { zone: "America/Sao_Paulo" })
+
+        if (!parsedDate.isValid) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Data agendada inválida" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        return parsedDate.toUTC().toJSDate()
     }
 }

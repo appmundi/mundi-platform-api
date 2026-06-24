@@ -3,9 +3,9 @@ import {
     Inject,
     HttpException,
     HttpStatus,
+    Logger,
     NotFoundException,
-    Param,
-    Query
+    Optional
 } from "@nestjs/common"
 import { Repository, In, Between } from "typeorm"
 import { User } from "../user/entities/user.entity"
@@ -14,9 +14,12 @@ import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import { Modality } from "../modality/entities/modality.entity"
 import { DateTime } from "luxon"
 import { Avaliation } from "../avaliation/entities/avaliation.entity"
+import { NotificationsService } from "../notifications/notifications.service"
 
 @Injectable()
 export class SchedulingService {
+    private readonly logger = new Logger(SchedulingService.name)
+
     constructor(
         @Inject("USER_REPOSITORY")
         private userRepository: Repository<User>,
@@ -27,8 +30,14 @@ export class SchedulingService {
         @Inject("MODALITY_REPOSITORY")
         private modalityRepository: Repository<Modality>,
         @Inject("AVALIATION_REPOSITORY")
-        private avaliationRepository: Repository<Avaliation>
-    ) {}
+        private avaliationRepository: Repository<Avaliation>,
+        @Optional()
+        private readonly notificationsService?: NotificationsService
+    ) {
+        if (!notificationsService) {
+            this.logger.warn("NotificationsService not injected — push notifications disabled")
+        }
+    }
 
     async isTimeSlotAvailable(
         entrepreneurId: number,
@@ -46,7 +55,14 @@ export class SchedulingService {
 
     async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
         console.log("Trying to find the Schedule")
-        const agenda = await this.scheduleRepository.findOne({ where: { id } })
+        const agenda = await this.scheduleRepository.findOne({
+            where: { id },
+            relations: {
+                entrepreneur: true,
+                user: true,
+                modality: true
+            }
+        })
 
         if (!agenda) {
             throw new NotFoundException(`Agenda with ID ${id} not found`)
@@ -62,15 +78,55 @@ export class SchedulingService {
                 }
             })
 
-            if (avaliation.length > 0) {
-                agenda.status = AgendaStatus.FINISHED
-                return this.scheduleRepository.save(agenda)
-            }
+            // Finalizing the service: keep FINISHED when a review already exists,
+            // otherwise move to FEEDBACK so the client can still rate. Either way
+            // the service is over for the client, so always send the "finished"
+            // step — this replaces the ongoing "started" notification on their
+            // device (which is locked and can't be dismissed otherwise).
+            agenda.status =
+                avaliation.length > 0
+                    ? AgendaStatus.FINISHED
+                    : AgendaStatus.FEEDBACK
+            const saved = await this.scheduleRepository.save(agenda)
+            await this.notificationsService?.notifyServiceStep(
+                agenda.user.userId,
+                "finished",
+                {
+                    scheduleId: id,
+                    providerName: agenda.entrepreneur.name,
+                    modalityTitle: agenda.modality?.title ?? ""
+                }
+            )
+            return saved
         }
 
         agenda.status = newStatus
         console.log("Trying to update the Schedule")
-        return this.scheduleRepository.save(agenda)
+        const saved = await this.scheduleRepository.save(agenda)
+
+        if (newStatus === AgendaStatus.STARTED) {
+            await this.notificationsService?.notifyServiceStep(
+                agenda.user.userId,
+                "started",
+                {
+                    scheduleId: id,
+                    providerName: agenda.entrepreneur.name,
+                    modalityTitle: agenda.modality?.title ?? ""
+                }
+            )
+        } else if (newStatus === AgendaStatus.FINISHED) {
+            await this.notificationsService?.notifyServiceStep(
+                agenda.user.userId,
+                "finished",
+                {
+                    scheduleId: id,
+                    providerName: agenda.entrepreneur.name,
+                    modalityTitle: agenda.modality?.title ?? ""
+                }
+            )
+        }
+
+        return saved
     }
 
     async scheduleService(
@@ -150,6 +206,21 @@ export class SchedulingService {
             )
         }
 
+        // Notify the entrepreneur that a client just booked with them.
+        if (createdSchedules.length > 0) {
+            const serviceName =
+                orderedModalities.length > 1
+                    ? `${orderedModalities[0].title} +${orderedModalities.length - 1}`
+                    : orderedModalities[0]?.title ?? "Serviço"
+
+            await this.notificationsService?.notifyNewBooking(entrepreneurId, {
+                scheduleId: createdSchedules[0].id,
+                serviceName,
+                clientName: user.name,
+                appointmentDatetime: baseDateTime
+            })
+        }
+
         return {
             message: "Agendamentos criados com sucesso.",
             schedules: createdSchedules.map((schedule) => ({
@@ -201,11 +272,13 @@ export class SchedulingService {
 
     async cancelSchedule(
         scheduleId: number,
-        userId: number
+        callerId: number,
+        cancellerType?: "user" | "entrepreneur",
+        callerName?: string
     ): Promise<Schedule> {
         const schedule = await this.scheduleRepository.findOne({
             where: { id: scheduleId },
-            relations: ["user", "entrepreneur"]
+            relations: ["user", "entrepreneur", "modality"]
         })
 
         if (!schedule) {
@@ -213,16 +286,103 @@ export class SchedulingService {
         }
 
         if (
-            schedule.user.userId !== userId &&
-            schedule.entrepreneur.entrepreneurId !== userId
+            schedule.status === AgendaStatus.CANCELED ||
+            schedule.status === AgendaStatus.FINISHED
         ) {
+            throw new Error(
+                `Agendamento já encerrado com status: ${schedule.status}`
+            )
+        }
+
+        // user and entrepreneur IDs come from independent sequences and can
+        // collide (both can be 1), so id comparison alone can't tell who
+        // cancelled. Prefer the explicit role sent by the app; fall back to
+        // matching the JWT name for older builds.
+        let cancelledByUser: boolean
+        if (cancellerType === "user" || cancellerType === "entrepreneur") {
+            cancelledByUser = cancellerType === "user"
+        } else if (callerName && schedule.entrepreneur.name === callerName) {
+            cancelledByUser = false
+        } else if (callerName && schedule.user.name === callerName) {
+            cancelledByUser = true
+        } else {
+            cancelledByUser = schedule.user.userId === callerId
+        }
+
+        const belongsToCaller =
+            schedule.user.userId === callerId ||
+            schedule.entrepreneur.entrepreneurId === callerId
+        if (!belongsToCaller) {
             throw new Error(
                 "Usuário não tem permissão para cancelar este agendamento"
             )
         }
 
         schedule.status = AgendaStatus.CANCELED
-        return await this.scheduleRepository.save(schedule)
+        const saved = await this.scheduleRepository.save(schedule)
+
+        // Notify the OTHER party
+        if (cancelledByUser) {
+            await this.notificationsService?.notifyCancellation(
+                "entrepreneur",
+                schedule.entrepreneur.entrepreneurId,
+                {
+                    scheduleId,
+                    serviceName: schedule.modality?.title ?? "Serviço",
+                    cancellerName: schedule.user.name,
+                    cancellerRole: "user",
+                    appointmentDatetime: schedule.scheduledDate
+                }
+            )
+        } else {
+            await this.notificationsService?.notifyCancellation(
+                "user",
+                schedule.user.userId,
+                {
+                    scheduleId,
+                    serviceName: schedule.modality?.title ?? "Serviço",
+                    cancellerName: schedule.entrepreneur.name,
+                    cancellerRole: "entrepreneur",
+                    appointmentDatetime: schedule.scheduledDate
+                }
+            )
+        }
+
+        return saved
+    }
+
+    async notifyEnRoute(
+        scheduleId: number,
+        entrepreneurId: number
+    ): Promise<void> {
+        const schedule = await this.scheduleRepository.findOne({
+            where: { id: scheduleId },
+            relations: { user: true, entrepreneur: true, modality: true }
+        })
+
+        if (!schedule) {
+            throw new NotFoundException(`Agendamento ${scheduleId} não encontrado`)
+        }
+
+        if (schedule.entrepreneur.entrepreneurId !== entrepreneurId) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.FORBIDDEN,
+                    error: "Acesso negado a este agendamento"
+                },
+                HttpStatus.FORBIDDEN
+            )
+        }
+
+        await this.notificationsService?.notifyServiceStep(
+            schedule.user.userId,
+            "en_route",
+            {
+                scheduleId,
+                providerName: schedule.entrepreneur.name,
+                modalityTitle: schedule.modality?.title ?? ""
+            }
+        )
     }
 
     async isTimeAvailable(
@@ -246,18 +406,13 @@ export class SchedulingService {
         date: string,
         duration: number
     ): Promise<string[]> {
-        const dateObj: DateTime = DateTime.fromISO(date, {
-            setZone: "America/Sao_Paulo"
-        })
+        const dateObj = DateTime.fromISO(date, { zone: "America/Sao_Paulo" })
+        if (!dateObj.isValid) {
+            throw new Error("Data informada inválida")
+        }
 
-        const startOfDay = DateTime.fromISO(date, { zone: "utc" })
-            .startOf("day")
-            .toUTC()
-            .toJSDate()
-        const endOfDay = DateTime.fromISO(date, { zone: "utc" })
-            .endOf("day")
-            .toUTC()
-            .toJSDate()
+        const startOfDay = dateObj.startOf("day").toUTC().toJSDate()
+        const endOfDay = dateObj.endOf("day").toUTC().toJSDate()
 
         const scheduledAppointments = await this.scheduleRepository.find({
             where: {
@@ -265,7 +420,7 @@ export class SchedulingService {
                 scheduledDate: Between(startOfDay, endOfDay)
             },
             relations: {
-                modality: true,
+                modality: true
             }
         })
 
@@ -300,20 +455,20 @@ export class SchedulingService {
         )
 
         const occupiedTimes = scheduledAppointments.flatMap((schedule) => {
-            const start = DateTime.fromISO(schedule.scheduledDate.toISOString());
-            const end = start.plus({ seconds: schedule.modality.duration });
+            const start = DateTime.fromJSDate(schedule.scheduledDate, {
+                zone: "utc"
+            }).setZone("America/Sao_Paulo")
+            const end = start.plus({ seconds: schedule.modality.duration })
 
-            const times = [];
-            let current = start;
-            console.log(start, end);
-            console.log(current);
+            const times = []
+            let current = start
             while (current < end) {
-                times.push(current.toFormat("HH:mm"));
-                current = current.plus({ minutes: 30 });
+                times.push(current.toFormat("HH:mm"))
+                current = current.plus({ minutes: 30 })
             }
 
-            return times;
-        });
+            return times
+        })
 
         const blockSize = duration / 30
         const availableTimes: string[] = []
