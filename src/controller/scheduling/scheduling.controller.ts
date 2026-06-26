@@ -9,16 +9,14 @@ import {
     HttpException,
     HttpStatus,
     Put,
-    Param
+    Param,
+    Logger
 } from "@nestjs/common"
 import { SchedulingService } from "./scheduling.service"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
 import * as jwt from "jsonwebtoken"
 import { DateTime } from "luxon"
-import { User } from "../user/entities/user.entity"
-import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
-import { Modality } from "../modality/entities/modality.entity"
-import { IDefaultResponse } from "src/interfaces"
+import { ScheduleMapper, ScheduleDto } from "./mappers/schedule.mapper"
 
 interface JwtPayload {
     id: number
@@ -27,6 +25,8 @@ interface JwtPayload {
 
 @Controller("scheduling")
 export class SchedulingController {
+    private readonly logger = new Logger(SchedulingController.name)
+
     constructor(private readonly schedulingService: SchedulingService) {}
 
     @Post("schedule")
@@ -46,61 +46,56 @@ export class SchedulingController {
         },
         @Headers("Authorization") authorizationHeader: string
     ) {
-        try {
-            if (!authorizationHeader) {
-                throw new HttpException(
-                    { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-    
-            const token = authorizationHeader.split(" ")[1];
-            const decodedToken = jwt.decode(token) as JwtPayload;
-    
-            if (!decodedToken || !decodedToken.id) {
-                throw new HttpException(
-                    { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-    
-            const userId = decodedToken.id;
-            console.log("Recebido scheduledDate:", body.scheduledDate);
-            const scheduledDate = this.parseScheduledDate(body.scheduledDate)
-    
-        
-            const isAvailable = await this.schedulingService.isTimeAvailable(
-                body.entrepreneurId,
-                scheduledDate
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
+                HttpStatus.BAD_REQUEST
             );
-    
-            if (!isAvailable) {
-                throw new HttpException(
-                    { status: HttpStatus.BAD_REQUEST, error: "Horário indisponível" },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-    
-            const result = await this.schedulingService.scheduleService(
-                userId,
-                body.modalityIds,
-                body.entrepreneurId,
-                scheduledDate,
-                AgendaStatus.INIT,
-                body.description,
-                body.address,
-            );
-    
-            return { message: result };
-        } catch (error) {
-            return { error: error.message };
         }
+
+        const token = authorizationHeader.split(" ")[1];
+        const decodedToken = jwt.decode(token) as JwtPayload;
+
+        if (!decodedToken || !decodedToken.id) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const userId = decodedToken.id;
+        this.logger.debug(`scheduleService: userId=${userId} date=${body.scheduledDate}`)
+        const scheduledDate = this.parseScheduledDate(body.scheduledDate)
+
+        const isAvailable = await this.schedulingService.isTimeAvailable(
+            body.entrepreneurId,
+            scheduledDate
+        );
+
+        if (!isAvailable) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Horário indisponível" },
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const result = await this.schedulingService.scheduleService(
+            userId,
+            body.modalityIds,
+            body.entrepreneurId,
+            scheduledDate,
+            AgendaStatus.INIT,
+            body.description,
+            body.address,
+        );
+
+        return { message: result };
     }
 
     @Get("findByUserId")
     async findByUserId(
         @Headers("authorization") authorizationHeader: string
-    ): Promise<Schedule[]> {
+    ): Promise<ScheduleDto[]> {
         if (!authorizationHeader) {
             throw new HttpException(
                 {
@@ -129,62 +124,7 @@ export class SchedulingController {
         )
         const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED && schedule.status !== AgendaStatus.FINISHED);
 
-        // if (!filteredSchedules || filteredSchedules.length === 0) {
-        //     throw new HttpException(
-        //         { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
-        //         HttpStatus.BAD_REQUEST
-        //     );
-        // }
-
-        const mappedSchedules: Schedule[] = filteredSchedules.map(
-            (scheduleResponse) => {
-                const schedule = new Schedule()
-                schedule.id = scheduleResponse.id
-                schedule.scheduledDate = scheduleResponse.scheduledDate
-                schedule.status = scheduleResponse.status
-                schedule.description = scheduleResponse.description
-
-                const user = new User()
-                user.userId = scheduleResponse.user.userId
-                user.name = scheduleResponse.user.name
-                user.address = scheduleResponse.user.address
-                user.addressNumber = scheduleResponse.user.addressNumber
-                user.cep = scheduleResponse.user.cep
-                user.city = scheduleResponse.user.city
-                user.state = scheduleResponse.user.state
-                user.phone = scheduleResponse.user.phone
-
-                schedule.user = user
-
-                const entrepreneur = new Entrepreneur()
-                entrepreneur.entrepreneurId =
-                    scheduleResponse.entrepreneur.entrepreneurId
-                entrepreneur.name = scheduleResponse.entrepreneur.name
-                entrepreneur.companyName =
-                    scheduleResponse.entrepreneur.companyName
-                entrepreneur.address = scheduleResponse.entrepreneur.address
-                entrepreneur.addressNumber =
-                    scheduleResponse.entrepreneur.addressNumber
-                entrepreneur.cep = scheduleResponse.entrepreneur.cep
-                entrepreneur.city = scheduleResponse.entrepreneur.city
-                entrepreneur.state = scheduleResponse.entrepreneur.state
-                entrepreneur.phone = scheduleResponse.entrepreneur.phone
-                entrepreneur.optionwork = scheduleResponse.entrepreneur.optionwork
-
-                schedule.entrepreneur = entrepreneur
-
-                const modality = new Modality()
-                modality.id = scheduleResponse.modality.id
-                modality.title = scheduleResponse.modality.title
-                modality.duration = scheduleResponse.modality.duration
-                modality.price = scheduleResponse.modality.price
-                schedule.modality = modality
-
-                return schedule
-            }
-        )
-
-        return mappedSchedules
+        return filteredSchedules.map(ScheduleMapper.toDto)
     }
 
     @Put(":id/update-status")
@@ -248,7 +188,7 @@ export class SchedulingController {
     @Get("findByEntrepreneurId")
     async findByEntrepreneurId(
         @Headers("authorization") authorizationHeader: string
-    ): Promise<IDefaultResponse> {
+    ): Promise<{ message: string; data: ScheduleDto[] }> {
         if (!authorizationHeader) {
             throw new HttpException(
                 {
@@ -271,71 +211,14 @@ export class SchedulingController {
                 HttpStatus.BAD_REQUEST
             )
         }
-        console.log("Trying to retrieve the Schedule")
+
         const schedules = await this.schedulingService.findByEntrepreneurId(
             decodedToken.id
         )
 
         const filteredSchedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
 
-        // if (!filteredSchedules || filteredSchedules.length === 0) {
-        //     throw new HttpException(
-        //         { status: HttpStatus.BAD_REQUEST, error: "Nenhum agendamento encontrado" },
-        //         HttpStatus.BAD_REQUEST
-        //     );
-        // }
-
-        const mappedSchedules: Schedule[] = filteredSchedules.map(
-            (scheduleResponse) => {
-                const schedule = new Schedule()
-
-                const entrepreneur = new Entrepreneur()
-                entrepreneur.entrepreneurId =
-                    scheduleResponse.entrepreneur.entrepreneurId
-                entrepreneur.name = scheduleResponse.entrepreneur.name
-                entrepreneur.companyName =
-                    scheduleResponse.entrepreneur.companyName
-                entrepreneur.address = scheduleResponse.entrepreneur.address
-                entrepreneur.addressNumber =
-                    scheduleResponse.entrepreneur.addressNumber
-                entrepreneur.cep = scheduleResponse.entrepreneur.cep
-                entrepreneur.city = scheduleResponse.entrepreneur.city
-                entrepreneur.state = scheduleResponse.entrepreneur.state
-                entrepreneur.phone = scheduleResponse.entrepreneur.phone
-                entrepreneur.optionwork = scheduleResponse.entrepreneur.optionwork
-                schedule.entrepreneur = entrepreneur
-                schedule.description = scheduleResponse.description
-                schedule.addressComplement = scheduleResponse.addressComplement
-                schedule.addressNumber = scheduleResponse.addressNumber
-                schedule.addressZipCode = scheduleResponse.addressZipCode
-
-                schedule.id = scheduleResponse.id
-                schedule.scheduledDate = scheduleResponse.scheduledDate
-                schedule.status = scheduleResponse.status
-
-                const user = new User()
-                user.userId = scheduleResponse.user.userId
-                user.name = scheduleResponse.user.name
-                user.address = scheduleResponse.user.address
-                user.addressNumber = scheduleResponse.user.addressNumber
-                user.cep = scheduleResponse.user.cep
-                user.city = scheduleResponse.user.city
-                user.state = scheduleResponse.user.state
-                user.phone = scheduleResponse.user.phone
-                schedule.user = user
-
-                const modality = new Modality()
-                modality.id = scheduleResponse.modality.id
-                modality.title = scheduleResponse.modality.title
-                modality.duration = scheduleResponse.modality.duration
-                modality.price = scheduleResponse.modality.price
-                schedule.modality = modality
-
-                return schedule
-            }
-        )
-
-        return { message: "Sucesso", data: mappedSchedules }
+        return { message: "Sucesso", data: filteredSchedules.map(ScheduleMapper.toDto) }
     }
 
     @Get("findSchedules")
@@ -343,104 +226,54 @@ export class SchedulingController {
         @Headers("authorization") authorizationHeader: string,
         @Query("startDate") startDate: string,
         @Query("endDate") endDate: string
-    ): Promise<Schedule[]> {
-        try {
-            if (!authorizationHeader) {
-                throw new HttpException(
-                    {
-                        status: HttpStatus.BAD_REQUEST,
-                        error: "Token JWT inválido"
-                    },
-                    HttpStatus.BAD_REQUEST
-                )
-            }
-
-            const token = authorizationHeader.split(" ")[1]
-            const decodedToken = jwt.decode(token) as JwtPayload
-
-            if (!decodedToken || !decodedToken.id) {
-                throw new HttpException(
-                    {
-                        status: HttpStatus.BAD_REQUEST,
-                        error: "Token JWT inválido"
-                    },
-                    HttpStatus.BAD_REQUEST
-                )
-            }
-
-            const entrepreneurId = decodedToken.id
-
-            let schedules = await this.schedulingService.findByEntrepreneurId(
-                entrepreneurId
+    ): Promise<ScheduleDto[]> {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Token JWT inválido"
+                },
+                HttpStatus.BAD_REQUEST
             )
-
-             schedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
-            
-            let filteredSchedules = schedules
-
-
-            if (startDate && endDate) {
-                const parsedStartDate = new Date(startDate)
-                const parsedEndDate = new Date(endDate)
-
-                filteredSchedules = schedules.filter((schedule) => {
-                    const scheduledDate = new Date(schedule.scheduledDate)
-                    return (
-                        scheduledDate >= parsedStartDate &&
-                        scheduledDate <= parsedEndDate
-                    )
-                })
-            }
-
-            const mapSchedules: Schedule[] = filteredSchedules.map(
-                (scheduleResponse) => {
-                    const schedule = new Schedule()
-
-                    schedule.id = scheduleResponse.id
-                    schedule.scheduledDate = scheduleResponse.scheduledDate
-
-                    const user = new User()
-                    user.userId = scheduleResponse.user.userId
-                    user.name = scheduleResponse.user.name
-                    user.address = scheduleResponse.user.address
-                    user.addressNumber = scheduleResponse.user.addressNumber
-                    user.cep = scheduleResponse.user.cep
-                    user.city = scheduleResponse.user.city
-                    user.state = scheduleResponse.user.state
-                    user.phone = scheduleResponse.user.phone
-                    schedule.user = user
-
-                    const entrepreneur = new Entrepreneur()
-                    entrepreneur.entrepreneurId =
-                        scheduleResponse.entrepreneur.entrepreneurId
-                    entrepreneur.name = scheduleResponse.entrepreneur.name
-                    entrepreneur.companyName =
-                        scheduleResponse.entrepreneur.companyName
-                    entrepreneur.address = scheduleResponse.entrepreneur.address
-                    entrepreneur.addressNumber =
-                        scheduleResponse.entrepreneur.addressNumber
-                    entrepreneur.cep = scheduleResponse.entrepreneur.cep
-                    entrepreneur.city = scheduleResponse.entrepreneur.city
-                    entrepreneur.state = scheduleResponse.entrepreneur.state
-                    entrepreneur.phone = scheduleResponse.entrepreneur.phone
-
-                    schedule.entrepreneur = entrepreneur
-
-                    const modality = new Modality()
-                    modality.id = scheduleResponse.modality.id
-                    modality.title = scheduleResponse.modality.title
-                    modality.duration = scheduleResponse.modality.duration
-                    modality.price = scheduleResponse.modality.price
-                    schedule.modality = modality
-
-                    return schedule
-                }
-            )
-
-            return mapSchedules
-        } catch (error) {
-            return null
         }
+
+        const token = authorizationHeader.split(" ")[1]
+        const decodedToken = jwt.decode(token) as JwtPayload
+
+        if (!decodedToken || !decodedToken.id) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Token JWT inválido"
+                },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        const entrepreneurId = decodedToken.id
+
+        let schedules = await this.schedulingService.findByEntrepreneurId(
+            entrepreneurId
+        )
+
+        schedules = schedules.filter(schedule => schedule.status !== AgendaStatus.CANCELED);
+
+        let filteredSchedules = schedules
+
+        if (startDate && endDate) {
+            const parsedStartDate = new Date(startDate)
+            const parsedEndDate = new Date(endDate)
+
+            filteredSchedules = schedules.filter((schedule) => {
+                const scheduledDate = new Date(schedule.scheduledDate)
+                return (
+                    scheduledDate >= parsedStartDate &&
+                    scheduledDate <= parsedEndDate
+                )
+            })
+        }
+
+        return filteredSchedules.map(ScheduleMapper.toDto)
     }
 
     @Post(":id/cancel")

@@ -16,7 +16,7 @@ export const databaseProviders = [
                 password: process.env.DB_PASSWORD,
                 database: process.env.DB_DATABASE,
                 entities: [__dirname + "/../**/*.entity{.ts,.js}"],
-                synchronize: true,
+                synchronize: process.env.NODE_ENV !== 'production',
                 ...(useSSL && {
                     ssl: {
                         ca: fs.readFileSync(caPath),

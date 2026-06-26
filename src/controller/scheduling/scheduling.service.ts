@@ -54,7 +54,7 @@ export class SchedulingService {
     }
 
     async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
-        console.log("Trying to find the Schedule")
+        this.logger.debug("Trying to find the Schedule")
         const agenda = await this.scheduleRepository.findOne({
             where: { id },
             relations: {
@@ -101,7 +101,7 @@ export class SchedulingService {
         }
 
         agenda.status = newStatus
-        console.log("Trying to update the Schedule")
+        this.logger.debug("Trying to update the Schedule")
         const saved = await this.scheduleRepository.save(agenda)
 
         if (newStatus === AgendaStatus.STARTED) {
