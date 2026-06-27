@@ -5,9 +5,9 @@ import {
     ManyToOne,
     JoinColumn
 } from "typeorm"
-import { User } from "src/controller/user/entities/user.entity"
-import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
-import { Modality } from "src/controller/modality/entities/modality.entity"
+import { User } from "../../user/entities/user.entity"
+import { Entrepreneur } from "../../entrepreneur/entities/entrepreneur.entity"
+import { Modality } from "../../modality/entities/modality.entity"
 
 export enum AgendaStatus {
     INIT = 'INIT',

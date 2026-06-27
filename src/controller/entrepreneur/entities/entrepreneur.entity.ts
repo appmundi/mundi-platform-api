@@ -6,12 +6,12 @@ import {
     ManyToMany,
     JoinTable
 } from "typeorm"
-import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
-import { Work } from "src/controller/work/entities/work.entity"
-import { Image } from "src/controller/uploads/entities/upload.entity"
-import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
-import { Category } from "src/controller/category/entities/category.entity"
-import { Client } from "src/controller/registerClient/entities/client.entity"
+import { Avaliation } from "../../avaliation/entities/avaliation.entity"
+import { Work } from "../../work/entities/work.entity"
+import { Image } from "../../uploads/entities/upload.entity"
+import { Schedule } from "../../scheduling/entities/scheduling.entity"
+import { Category } from "../../category/entities/category.entity"
+import { Client } from "../../registerClient/entities/client.entity"
 
 @Entity()
 export class Entrepreneur {

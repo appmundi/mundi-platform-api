@@ -12,7 +12,7 @@ import {
     HttpStatus
 } from "@nestjs/common"
 import { WorkService } from "./work.service"
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
+import { JwtAuthGuard } from "../../auth/jwt-auth.guard"
 import { Work } from "./entities/work.entity";
 import { ModalityService } from "../modality/modality.service";
 

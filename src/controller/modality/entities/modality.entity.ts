@@ -1,5 +1,5 @@
-import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
-import { Work } from "src/controller/work/entities/work.entity"
+import { Schedule } from "../../scheduling/entities/scheduling.entity"
+import { Work } from "../../work/entities/work.entity"
 import {
     Column,
     Entity,

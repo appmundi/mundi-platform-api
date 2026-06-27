@@ -6,7 +6,7 @@ import {
     NotFoundException,
     Logger
 } from "@nestjs/common"
-import { ResultDto } from "src/dto/result.dto"
+import { ResultDto } from "../../dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
 import { In, Repository } from "typeorm"

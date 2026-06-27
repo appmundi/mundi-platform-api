@@ -7,7 +7,7 @@ import {
     NotFoundException
 } from "@nestjs/common"
 import { AvaliationService } from "./avaliation.service"
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
+import { JwtAuthGuard } from "../../auth/jwt-auth.guard"
 import { AgendaStatus } from "../scheduling/entities/scheduling.entity"
 import { SchedulingService } from "../scheduling/scheduling.service"
 

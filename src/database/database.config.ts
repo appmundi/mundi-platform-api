@@ -3,7 +3,7 @@ import { DataSourceOptions } from "typeorm"
 import {
     isHomologationEnvironment,
     loadEnvironmentVariables
-} from "src/config/environment"
+} from "../config/environment"
 
 loadEnvironmentVariables()
 

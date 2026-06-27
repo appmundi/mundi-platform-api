@@ -1,6 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common"
-import { DatabaseModule } from "src/database/database.module"
-import { AuthModule } from "src/auth/auth.module"
+import { DatabaseModule } from "../../database/database.module"
+import { AuthModule } from "../../auth/auth.module"
 import { TypeOrmModule } from "@nestjs/typeorm"
 import { NotificationsController } from "./notifications.controller"
 import { NotificationsService } from "./notifications.service"

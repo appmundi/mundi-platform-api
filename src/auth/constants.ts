@@ -1,4 +1,4 @@
-import { loadEnvironmentVariables } from "src/config/environment"
+import { loadEnvironmentVariables } from "../config/environment"
 
 loadEnvironmentVariables()
 
