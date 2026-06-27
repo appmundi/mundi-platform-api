@@ -1,0 +1,7 @@
+allowBuilds:
+  '@firebase/util': true
+  '@nestjs/core': true
+  '@scarf/scarf': false
+  bcrypt: true
+  protobufjs: true
+  sharp: true
