@@ -6,7 +6,7 @@ export class Avaliation {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column({ type: 'double' } )
+    @Column({ type: "double precision" })
     rating: number
 
     @Column()

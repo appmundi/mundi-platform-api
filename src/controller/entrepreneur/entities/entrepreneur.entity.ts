@@ -60,11 +60,11 @@ export class Entrepreneur {
     @Column()
     valueDeslocation: string
 
-    @Column('double', {default: 0})
-    latitude: number;
+    @Column("double precision", { default: 0 })
+    latitude: number
 
-    @Column('double', {default: 0.0, })
-    longitude: number;
+    @Column("double precision", { default: 0.0 })
+    longitude: number
 
     @Column({ type: "json" })
     operation: JSON
@@ -73,13 +73,13 @@ export class Entrepreneur {
     status?: boolean
 
     @Column({ nullable: true })
-    resetPasswordCode: string;
+    resetPasswordCode: string
 
     @Column({ nullable: true })
-    resetPasswordExpires: Date;
+    resetPasswordExpires: Date
 
     @Column({ type: "text", nullable: true })
-    description: string;
+    description: string
 
     @ManyToMany(() => Category)
     @JoinTable()
@@ -100,6 +100,6 @@ export class Entrepreneur {
     @OneToMany(() => Image, (image) => image.entrepreneur)
     images: Image[]
 
-    @Column({type: "text", nullable: true, select: false})
-    profileImage: string | null;
+    @Column({ type: "text", nullable: true, select: false })
+    profileImage: string | null
 }
