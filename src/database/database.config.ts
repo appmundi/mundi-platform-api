@@ -33,6 +33,10 @@ const getDatabaseUrl = (): string | undefined =>
     process.env.DATABASE_URL || process.env.DB_URL
 
 export const getDatabaseType = (): SupportedDatabaseType => {
+    if (process.env.DB_TYPE === "mysql" || process.env.DB_TYPE === "postgres") {
+        return process.env.DB_TYPE
+    }
+
     if (!isHomologationEnvironment()) {
         return "mysql"
     }
@@ -47,11 +51,12 @@ const getMysqlSslConfig = () => {
         return undefined
     }
 
-    const caPath = process.env.DB_SSL_CA ?? "./global-bundle.pem"
+    const caPath = process.env.DB_SSL_CA
 
     return {
-        ca: fs.readFileSync(caPath),
-        rejectUnauthorized: true
+        ...(caPath && { ca: fs.readFileSync(caPath) }),
+        rejectUnauthorized:
+            getOptionalBoolean(process.env.DB_SSL_REJECT_UNAUTHORIZED) ?? true
     }
 }
 
