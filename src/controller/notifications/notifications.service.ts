@@ -47,29 +47,33 @@ export class NotificationsService {
         step: ServiceStep,
         payload: ServiceStepPayload
     ): Promise<void> {
-        const tokens = await this.deviceTokenService.findByOwner(
-            "user",
-            clientUserId
-        )
-        if (!tokens.length) return
+        try {
+            const tokens = await this.deviceTokenService.findByOwner(
+                "user",
+                clientUserId
+            )
+            if (!tokens.length) return
 
-        const data: Record<string, string> = {
-            type: "service_step",
-            appointment_id: String(payload.scheduleId),
-            step,
-            provider_name: payload.providerName,
-            modality_title: payload.modalityTitle,
-            eta: payload.eta ?? "",
-            provider_avatar_url: ""
+            const data: Record<string, string> = {
+                type: "service_step",
+                appointment_id: String(payload.scheduleId),
+                step,
+                provider_name: payload.providerName,
+                modality_title: payload.modalityTitle,
+                eta: payload.eta ?? "",
+                provider_avatar_url: ""
+            }
+
+            await this.fcmService.sendToTokens(
+                tokens.map((t) => t.token),
+                data
+            )
+            this.logger.log(
+                `service_step(${step}) sent to user ${clientUserId} — ${tokens.length} token(s)`
+            )
+        } catch (e) {
+            this.logger.error(`notifyServiceStep failed: ${e?.message ?? e}`)
         }
-
-        await this.fcmService.sendToTokens(
-            tokens.map((t) => t.token),
-            data
-        )
-        this.logger.log(
-            `service_step(${step}) sent to user ${clientUserId} — ${tokens.length} token(s)`
-        )
     }
 
     async notifyCancellation(
@@ -77,28 +81,32 @@ export class NotificationsService {
         otherPartyId: number,
         payload: CancellationPayload
     ): Promise<void> {
-        const tokens = await this.deviceTokenService.findByOwner(
-            otherPartyOwnerType,
-            otherPartyId
-        )
-        if (!tokens.length) return
+        try {
+            const tokens = await this.deviceTokenService.findByOwner(
+                otherPartyOwnerType,
+                otherPartyId
+            )
+            if (!tokens.length) return
 
-        const data: Record<string, string> = {
-            type: "cancellation",
-            appointment_id: String(payload.scheduleId),
-            service_name: payload.serviceName,
-            other_party_name: payload.cancellerName,
-            other_party_role: payload.cancellerRole,
-            appointment_datetime: payload.appointmentDatetime.toISOString()
+            const data: Record<string, string> = {
+                type: "cancellation",
+                appointment_id: String(payload.scheduleId),
+                service_name: payload.serviceName,
+                other_party_name: payload.cancellerName,
+                other_party_role: payload.cancellerRole,
+                appointment_datetime: payload.appointmentDatetime.toISOString()
+            }
+
+            await this.fcmService.sendToTokens(
+                tokens.map((t) => t.token),
+                data
+            )
+            this.logger.log(
+                `cancellation sent to ${otherPartyOwnerType} ${otherPartyId} — ${tokens.length} token(s)`
+            )
+        } catch (e) {
+            this.logger.error(`notifyCancellation failed: ${e?.message ?? e}`)
         }
-
-        await this.fcmService.sendToTokens(
-            tokens.map((t) => t.token),
-            data
-        )
-        this.logger.log(
-            `cancellation sent to ${otherPartyOwnerType} ${otherPartyId} — ${tokens.length} token(s)`
-        )
     }
 
     /// Morning reminder to the client: one push per appointment happening today.
@@ -106,24 +114,28 @@ export class NotificationsService {
         clientUserId: number,
         payload: DailyAgendaClientPayload
     ): Promise<void> {
-        const tokens = await this.deviceTokenService.findByOwner(
-            "user",
-            clientUserId
-        )
-        if (!tokens.length) return
+        try {
+            const tokens = await this.deviceTokenService.findByOwner(
+                "user",
+                clientUserId
+            )
+            if (!tokens.length) return
 
-        const data: Record<string, string> = {
-            type: "daily_agenda",
-            appointment_id: String(payload.scheduleId),
-            service_name: payload.serviceName,
-            provider_name: payload.providerName,
-            appointment_datetime: payload.appointmentDatetime.toISOString()
+            const data: Record<string, string> = {
+                type: "daily_agenda",
+                appointment_id: String(payload.scheduleId),
+                service_name: payload.serviceName,
+                provider_name: payload.providerName,
+                appointment_datetime: payload.appointmentDatetime.toISOString()
+            }
+
+            await this.fcmService.sendToTokens(
+                tokens.map((t) => t.token),
+                data
+            )
+        } catch (e) {
+            this.logger.error(`notifyDailyAgendaClient failed: ${e?.message ?? e}`)
         }
-
-        await this.fcmService.sendToTokens(
-            tokens.map((t) => t.token),
-            data
-        )
     }
 
     /// New booking made by a client: notify the entrepreneur of the establishment.
@@ -131,27 +143,31 @@ export class NotificationsService {
         entrepreneurId: number,
         payload: NewBookingPayload
     ): Promise<void> {
-        const tokens = await this.deviceTokenService.findByOwner(
-            "entrepreneur",
-            entrepreneurId
-        )
-        if (!tokens.length) return
+        try {
+            const tokens = await this.deviceTokenService.findByOwner(
+                "entrepreneur",
+                entrepreneurId
+            )
+            if (!tokens.length) return
 
-        const data: Record<string, string> = {
-            type: "new_booking",
-            appointment_id: String(payload.scheduleId),
-            service_name: payload.serviceName,
-            other_party_name: payload.clientName,
-            appointment_datetime: payload.appointmentDatetime.toISOString()
+            const data: Record<string, string> = {
+                type: "new_booking",
+                appointment_id: String(payload.scheduleId),
+                service_name: payload.serviceName,
+                other_party_name: payload.clientName,
+                appointment_datetime: payload.appointmentDatetime.toISOString()
+            }
+
+            await this.fcmService.sendToTokens(
+                tokens.map((t) => t.token),
+                data
+            )
+            this.logger.log(
+                `new_booking sent to entrepreneur ${entrepreneurId} — ${tokens.length} token(s)`
+            )
+        } catch (e) {
+            this.logger.error(`notifyNewBooking failed: ${e?.message ?? e}`)
         }
-
-        await this.fcmService.sendToTokens(
-            tokens.map((t) => t.token),
-            data
-        )
-        this.logger.log(
-            `new_booking sent to entrepreneur ${entrepreneurId} — ${tokens.length} token(s)`
-        )
     }
 
     /// Morning summary to the entrepreneur: a single aggregated push with the
@@ -160,22 +176,26 @@ export class NotificationsService {
         entrepreneurId: number,
         count: number
     ): Promise<void> {
-        if (count <= 0) return
+        try {
+            if (count <= 0) return
 
-        const tokens = await this.deviceTokenService.findByOwner(
-            "entrepreneur",
-            entrepreneurId
-        )
-        if (!tokens.length) return
+            const tokens = await this.deviceTokenService.findByOwner(
+                "entrepreneur",
+                entrepreneurId
+            )
+            if (!tokens.length) return
 
-        const data: Record<string, string> = {
-            type: "daily_agenda",
-            count: String(count)
+            const data: Record<string, string> = {
+                type: "daily_agenda",
+                count: String(count)
+            }
+
+            await this.fcmService.sendToTokens(
+                tokens.map((t) => t.token),
+                data
+            )
+        } catch (e) {
+            this.logger.error(`notifyDailyAgendaEntrepreneur failed: ${e?.message ?? e}`)
         }
-
-        await this.fcmService.sendToTokens(
-            tokens.map((t) => t.token),
-            data
-        )
     }
 }

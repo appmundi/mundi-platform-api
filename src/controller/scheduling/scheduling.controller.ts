@@ -21,6 +21,7 @@ import { ScheduleMapper, ScheduleDto } from "./mappers/schedule.mapper"
 interface JwtPayload {
     id: number
     username: string
+    role?: "user" | "entrepreneur"
 }
 
 @Controller("scheduling")
@@ -28,6 +29,27 @@ export class SchedulingController {
     private readonly logger = new Logger(SchedulingController.name)
 
     constructor(private readonly schedulingService: SchedulingService) {}
+
+    private decodeToken(authorizationHeader: string | undefined): JwtPayload {
+        if (!authorizationHeader) {
+            throw new HttpException(
+                { status: HttpStatus.UNAUTHORIZED, error: "Token JWT ausente" },
+                HttpStatus.UNAUTHORIZED
+            )
+        }
+        const token = authorizationHeader.split(" ")[1]
+        try {
+            return jwt.verify(
+                token,
+                process.env.ACCESS_TOKEN_SECRET
+            ) as unknown as JwtPayload
+        } catch {
+            throw new HttpException(
+                { status: HttpStatus.UNAUTHORIZED, error: "Token JWT inválido" },
+                HttpStatus.UNAUTHORIZED
+            )
+        }
+    }
 
     @Post("schedule")
     async scheduleService(
@@ -46,45 +68,17 @@ export class SchedulingController {
         },
         @Headers("Authorization") authorizationHeader: string
     ) {
-        if (!authorizationHeader) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        const token = authorizationHeader.split(" ")[1];
-        const decodedToken = jwt.decode(token) as JwtPayload;
-
-        if (!decodedToken || !decodedToken.id) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
-                HttpStatus.BAD_REQUEST
-            );
-        }
+        const decodedToken = this.decodeToken(authorizationHeader)
 
         const userId = decodedToken.id;
         this.logger.debug(`scheduleService: userId=${userId} date=${body.scheduledDate}`)
         const scheduledDate = this.parseScheduledDate(body.scheduledDate)
-
-        const isAvailable = await this.schedulingService.isTimeAvailable(
-            body.entrepreneurId,
-            scheduledDate
-        );
-
-        if (!isAvailable) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Horário indisponível" },
-                HttpStatus.BAD_REQUEST
-            );
-        }
 
         const result = await this.schedulingService.scheduleService(
             userId,
             body.modalityIds,
             body.entrepreneurId,
             scheduledDate,
-            AgendaStatus.INIT,
             body.description,
             body.address,
         );
@@ -96,28 +90,7 @@ export class SchedulingController {
     async findByUserId(
         @Headers("authorization") authorizationHeader: string
     ): Promise<ScheduleDto[]> {
-        if (!authorizationHeader) {
-            throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Token JWT ausente"
-                },
-                HttpStatus.BAD_REQUEST
-            )
-        }
-
-        const token = authorizationHeader.split(" ")[1]
-        const decodedToken = jwt.decode(token) as JwtPayload
-
-        if (!decodedToken || !decodedToken.id) {
-            throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Token JWT inválido"
-                },
-                HttpStatus.BAD_REQUEST
-            )
-        }
+        const decodedToken = this.decodeToken(authorizationHeader)
 
         const schedules = await this.schedulingService.findByUserId(
             decodedToken.id
@@ -133,22 +106,7 @@ export class SchedulingController {
         @Body("status") newStatus: AgendaStatus,
         @Headers("authorization") authorizationHeader: string
     ): Promise<Schedule> {
-        if (!authorizationHeader) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
-                HttpStatus.BAD_REQUEST
-            )
-        }
-
-        const token = authorizationHeader.split(" ")[1]
-        const decodedToken = jwt.decode(token) as JwtPayload
-
-        if (!decodedToken?.id) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
-                HttpStatus.BAD_REQUEST
-            )
-        }
+        const decodedToken = this.decodeToken(authorizationHeader)
 
         if (
             ![
@@ -182,35 +140,17 @@ export class SchedulingController {
             }
         }
 
-        return this.schedulingService.updateStatus(id, newStatus)
+        return this.schedulingService.updateStatus(id, newStatus, {
+            id: decodedToken.id,
+            role: decodedToken.role
+        })
     }
 
     @Get("findByEntrepreneurId")
     async findByEntrepreneurId(
         @Headers("authorization") authorizationHeader: string
     ): Promise<{ message: string; data: ScheduleDto[] }> {
-        if (!authorizationHeader) {
-            throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Token JWT ausente"
-                },
-                HttpStatus.BAD_REQUEST
-            )
-        }
-        const token = authorizationHeader.split(" ")[1]
-
-        const decodedToken = jwt.decode(token) as JwtPayload
-
-        if (!decodedToken || !decodedToken.id) {
-            throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Token JWT inválido"
-                },
-                HttpStatus.BAD_REQUEST
-            )
-        }
+        const decodedToken = this.decodeToken(authorizationHeader)
 
         const schedules = await this.schedulingService.findByEntrepreneurId(
             decodedToken.id
@@ -227,28 +167,7 @@ export class SchedulingController {
         @Query("startDate") startDate: string,
         @Query("endDate") endDate: string
     ): Promise<ScheduleDto[]> {
-        if (!authorizationHeader) {
-            throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Token JWT inválido"
-                },
-                HttpStatus.BAD_REQUEST
-            )
-        }
-
-        const token = authorizationHeader.split(" ")[1]
-        const decodedToken = jwt.decode(token) as JwtPayload
-
-        if (!decodedToken || !decodedToken.id) {
-            throw new HttpException(
-                {
-                    status: HttpStatus.BAD_REQUEST,
-                    error: "Token JWT inválido"
-                },
-                HttpStatus.BAD_REQUEST
-            )
-        }
+        const decodedToken = this.decodeToken(authorizationHeader)
 
         const entrepreneurId = decodedToken.id
 
@@ -282,30 +201,14 @@ export class SchedulingController {
         @Body("cancellerType") cancellerType: "user" | "entrepreneur",
         @Headers("authorization") authorizationHeader: string
     ): Promise<{ message: string }> {
-        if (!authorizationHeader) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
-                HttpStatus.BAD_REQUEST
-            )
-        }
-
-        const token = authorizationHeader.split(" ")[1]
-        const decodedToken = jwt.decode(token) as JwtPayload
-
-        if (!decodedToken || !decodedToken.id) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
-                HttpStatus.BAD_REQUEST
-            )
-        }
+        const decodedToken = this.decodeToken(authorizationHeader)
 
         try {
-            // Both apps hit this endpoint, so the role is taken from the body
-            // (the JWT carries no role); decodedToken.username is the fallback.
+            // Tokens novos carregam a role; tokens antigos caem no cancellerType do body.
             await this.schedulingService.cancelSchedule(
                 scheduleId,
                 decodedToken.id,
-                cancellerType,
+                decodedToken.role ?? cancellerType,
                 decodedToken.username
             )
             return { message: "Agendamento cancelado com sucesso" }
@@ -324,22 +227,7 @@ export class SchedulingController {
         @Param("id") scheduleId: number,
         @Headers("authorization") authorizationHeader: string
     ): Promise<{ message: string }> {
-        if (!authorizationHeader) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT ausente" },
-                HttpStatus.BAD_REQUEST
-            )
-        }
-
-        const token = authorizationHeader.split(" ")[1]
-        const decodedToken = jwt.decode(token) as JwtPayload
-
-        if (!decodedToken?.id) {
-            throw new HttpException(
-                { status: HttpStatus.BAD_REQUEST, error: "Token JWT inválido" },
-                HttpStatus.BAD_REQUEST
-            )
-        }
+        const decodedToken = this.decodeToken(authorizationHeader)
 
         try {
             await this.schedulingService.notifyEnRoute(

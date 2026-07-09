@@ -143,7 +143,7 @@ export class EntrepreneurController {
                 throw new UnauthorizedException("Senha incorreta.")
             }
 
-            return await this.authService.login(entrepreneurId, name)
+            return await this.authService.login(entrepreneurId, name, "entrepreneur")
         } catch (e) {
             this.logger.warn(`login failed: ${e.message}`)
             throw new UnauthorizedException("Erro de autenticação.")

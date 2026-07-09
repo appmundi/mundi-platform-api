@@ -20,4 +20,7 @@ export class Avaliation {
 
     @Column()
     userId: number
+
+    @Column({ nullable: true })
+    scheduleId: number
 }

@@ -118,7 +118,7 @@ export class UserController {
 
         const { name, userId } = user
 
-        return this.authService.login(userId, name)
+        return this.authService.login(userId, name, "user")
     }
 
     @Put(":id")

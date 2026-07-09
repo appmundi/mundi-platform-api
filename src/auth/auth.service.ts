@@ -62,9 +62,13 @@ export class AuthService {
         )
     }
 
-    async login(userId: string, username: string) {
-        const payload = { sub: userId, id: userId, username: username }
-        this.logger.debug(`login userId=${userId}`)
+    async login(
+        userId: string,
+        username: string,
+        role: "user" | "entrepreneur" = "user"
+    ) {
+        const payload = { sub: userId, id: userId, username: username, role }
+        this.logger.debug(`login userId=${userId} role=${role}`)
         return {
             status: true,
             message: "Login efetuado com sucesso",
