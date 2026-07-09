@@ -1,7 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AuthModule } from "src/auth/auth.module";
-import { DatabaseModule } from "src/database/database.module";
+import { AuthModule } from "../../auth/auth.module";
+import { DatabaseModule } from "../../database/database.module";
 import { ModalityController } from "./modality.controller";
 import { ModalityProviders } from "./modality.providers";
 import { ModalityService } from "./modality.service";

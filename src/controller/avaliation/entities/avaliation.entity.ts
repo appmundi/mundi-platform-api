@@ -1,12 +1,12 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm"
-import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
+import { Entrepreneur } from "../../entrepreneur/entities/entrepreneur.entity"
 
 @Entity()
 export class Avaliation {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column({ type: 'double' } )
+    @Column({ type: "double precision" })
     rating: number
 
     @Column()

@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Param, Put, Delete } from "@nestjs/common"
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
+import { JwtAuthGuard } from "../../auth/jwt-auth.guard"
 import { ModalityService } from "./modality.service"
 import { HttpException, HttpStatus } from "@nestjs/common"
 import { Modality } from "./entities/modality.entity";

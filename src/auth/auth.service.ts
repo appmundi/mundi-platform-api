@@ -1,10 +1,10 @@
 import { Injectable, UnauthorizedException, Logger } from "@nestjs/common"
 import { UserService } from "../controller/user/user.service"
-import { EntrepreneurService } from "src/controller/entrepreneur/entrepreneur.service"
+import { EntrepreneurService } from "../controller/entrepreneur/entrepreneur.service"
 import * as bcrypt from "bcrypt"
 import { JwtService } from "@nestjs/jwt"
-import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
-import { User } from "src/controller/user/entities/user.entity"
+import { Entrepreneur } from "../controller/entrepreneur/entities/entrepreneur.entity"
+import { User } from "../controller/user/entities/user.entity"
 
 @Injectable()
 export class AuthService {

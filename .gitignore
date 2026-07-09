@@ -5,6 +5,7 @@
 # env e segredos — nunca commitar
 .env
 .env.*
+hom.env
 *firebase-adminsdk*.json
 global-bundle.pem
 

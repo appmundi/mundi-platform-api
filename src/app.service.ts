@@ -1,33 +1,21 @@
-import { Injectable } from "@nestjs/common";
-import { createConnection, Connection } from "mysql2"; 
+import { Inject, Injectable } from "@nestjs/common"
+import { DataSource } from "typeorm"
 
 @Injectable()
 export class AppService {
+    constructor(
+        @Inject("DATA_SOURCE") private readonly dataSource: DataSource
+    ) {}
+
     async getHello(): Promise<any> {
-        const appStatus = "running";
-        let databaseStatus = "disconnected";
-
-        const dbConfig = {
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_DATABASE,
-        };
-
-        const connection: Connection = createConnection(dbConfig);
-
-        try {
-            await connection.connect();
-            databaseStatus = "connected";
-        } catch (error) {
-            console.error("Error connecting to the database:", error);
-        } finally {
-            connection.end();
-        }
+        const appStatus = "running"
+        const databaseStatus = this.dataSource.isInitialized
+            ? "connected"
+            : "disconnected"
 
         return {
             app: appStatus,
-            database: databaseStatus,
-        };
+            database: databaseStatus
+        }
     }
 }
