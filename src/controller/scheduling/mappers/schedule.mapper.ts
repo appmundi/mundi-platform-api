@@ -48,6 +48,8 @@ export class ScheduleMapper {
         entrepreneur.state = s.entrepreneur.state
         entrepreneur.phone = s.entrepreneur.phone
         entrepreneur.optionwork = s.entrepreneur.optionwork
+        entrepreneur.latitude = s.entrepreneur.latitude
+        entrepreneur.longitude = s.entrepreneur.longitude
 
         const modality = new Modality()
         modality.id = s.modality.id

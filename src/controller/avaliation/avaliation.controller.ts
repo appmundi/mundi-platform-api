@@ -39,11 +39,13 @@ export class AvaliationController {
                 evaluationData.comment,
                 evaluationData.name,
                 evaluationData.scheduleId,
-                evaluationData.newStatus,
                 evaluationData.userId
             )
 
-            await this.scheduleService.updateStatus(evaluationData.scheduleId, AgendaStatus.FINISHED);
+            await this.scheduleService.updateStatus(
+                evaluationData.scheduleId,
+                AgendaStatus.FINISHED
+            );
 
             return { message: "Avaliação enviada com sucesso", avaliation }
         } catch (error) {
