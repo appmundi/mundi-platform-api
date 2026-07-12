@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from "typeorm"
-import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
-import { Modality } from "src/controller/modality/entities/modality.entity"
+import { Entrepreneur } from "../../entrepreneur/entities/entrepreneur.entity"
+import { Modality } from "../../modality/entities/modality.entity"
 
 @Entity()
 export class Work {

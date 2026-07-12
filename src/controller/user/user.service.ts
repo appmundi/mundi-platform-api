@@ -3,7 +3,7 @@ import { Repository } from "typeorm"
 import { User } from "./entities/user.entity"
 import { Schedule } from "../scheduling/entities/scheduling.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
-import { ResultDto } from "src/dto/result.dto"
+import { ResultDto } from "../../dto/result.dto"
 import * as bcrypt from "bcrypt"
 import { randomBytes } from 'crypto';
 

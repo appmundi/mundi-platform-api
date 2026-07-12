@@ -6,12 +6,12 @@ import {
     ManyToMany,
     JoinTable
 } from "typeorm"
-import { Avaliation } from "src/controller/avaliation/entities/avaliation.entity"
-import { Work } from "src/controller/work/entities/work.entity"
-import { Image } from "src/controller/uploads/entities/upload.entity"
-import { Schedule } from "src/controller/scheduling/entities/scheduling.entity"
-import { Category } from "src/controller/category/entities/category.entity"
-import { Client } from "src/controller/registerClient/entities/client.entity"
+import { Avaliation } from "../../avaliation/entities/avaliation.entity"
+import { Work } from "../../work/entities/work.entity"
+import { Image } from "../../uploads/entities/upload.entity"
+import { Schedule } from "../../scheduling/entities/scheduling.entity"
+import { Category } from "../../category/entities/category.entity"
+import { Client } from "../../registerClient/entities/client.entity"
 
 @Entity()
 export class Entrepreneur {
@@ -60,11 +60,11 @@ export class Entrepreneur {
     @Column()
     valueDeslocation: string
 
-    @Column('double', {default: 0})
-    latitude: number;
+    @Column("double precision", { default: 0 })
+    latitude: number
 
-    @Column('double', {default: 0.0, })
-    longitude: number;
+    @Column("double precision", { default: 0.0 })
+    longitude: number
 
     @Column({ type: "json" })
     operation: JSON
@@ -73,13 +73,13 @@ export class Entrepreneur {
     status?: boolean
 
     @Column({ nullable: true })
-    resetPasswordCode: string;
+    resetPasswordCode: string
 
     @Column({ nullable: true })
-    resetPasswordExpires: Date;
+    resetPasswordExpires: Date
 
     @Column({ type: "text", nullable: true })
-    description: string;
+    description: string
 
     @ManyToMany(() => Category)
     @JoinTable()
@@ -100,6 +100,6 @@ export class Entrepreneur {
     @OneToMany(() => Image, (image) => image.entrepreneur)
     images: Image[]
 
-    @Column({type: "text", nullable: true, select: false})
-    profileImage: string | null;
+    @Column({ type: "text", nullable: true, select: false })
+    profileImage: string | null
 }

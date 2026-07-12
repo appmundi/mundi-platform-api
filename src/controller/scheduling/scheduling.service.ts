@@ -7,7 +7,7 @@ import {
     NotFoundException,
     Optional
 } from "@nestjs/common"
-import { Repository, In, Between } from "typeorm"
+import { Repository, In, Between, Not } from "typeorm"
 import { User } from "../user/entities/user.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
 import { AgendaStatus, Schedule } from "./entities/scheduling.entity"
@@ -39,22 +39,40 @@ export class SchedulingService {
         }
     }
 
-    async isTimeSlotAvailable(
+    /**
+     * Retorna true se [start, end) colide com algum agendamento ativo (não cancelado)
+     * do empreendedor. Um agendamento existente ocupa
+     * [scheduledDate, scheduledDate + modality.duration segundos).
+     */
+    async hasTimeConflict(
         entrepreneurId: number,
-        scheduledDate: Date
+        start: Date,
+        end: Date
     ): Promise<boolean> {
-        const existingSchedule = await this.scheduleRepository.findOne({
+        const windowStart = new Date(start.getTime() - 24 * 60 * 60 * 1000)
+        const candidates = await this.scheduleRepository.find({
             where: {
                 entrepreneur: { entrepreneurId },
-                scheduledDate
-            }
+                scheduledDate: Between(windowStart, end),
+                status: Not(AgendaStatus.CANCELED)
+            },
+            relations: { modality: true }
         })
 
-        return !existingSchedule
+        return candidates.some((s) => {
+            const existingStart = new Date(s.scheduledDate).getTime()
+            const durationMs = (s.modality?.duration ?? 0) * 1000
+            const existingEnd = existingStart + durationMs
+            return start.getTime() < existingEnd && end.getTime() > existingStart
+        })
     }
 
-    async updateStatus(id: number, newStatus: AgendaStatus): Promise<Schedule> {
-        console.log("Trying to find the Schedule")
+    async updateStatus(
+        id: number,
+        newStatus: AgendaStatus,
+        caller?: { id: number; role?: "user" | "entrepreneur" }
+    ): Promise<Schedule> {
+        this.logger.debug("Trying to find the Schedule")
         const agenda = await this.scheduleRepository.findOne({
             where: { id },
             relations: {
@@ -68,14 +86,37 @@ export class SchedulingService {
             throw new NotFoundException(`Agenda with ID ${id} not found`)
         }
 
+        // Estados terminais não mudam mais.
+        if (
+            agenda.status === AgendaStatus.CANCELED ||
+            agenda.status === AgendaStatus.FINISHED
+        ) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.CONFLICT,
+                    error: `Agendamento já encerrado com status: ${agenda.status}`
+                },
+                HttpStatus.CONFLICT
+            )
+        }
+
+        // Empreendedor só mexe nos próprios agendamentos (tokens antigos, sem role, pulam o check).
+        if (
+            caller?.role === "entrepreneur" &&
+            agenda.entrepreneur.entrepreneurId !== caller.id
+        ) {
+            throw new HttpException(
+                {
+                    status: HttpStatus.FORBIDDEN,
+                    error: "Acesso negado a este agendamento"
+                },
+                HttpStatus.FORBIDDEN
+            )
+        }
+
         if (newStatus == AgendaStatus.FEEDBACK) {
             const avaliation = await this.avaliationRepository.find({
-                where: {
-                    userId: agenda.user.userId,
-                    entrepreneur: {
-                        entrepreneurId: agenda.entrepreneur.entrepreneurId
-                    }
-                }
+                where: { scheduleId: agenda.id }
             })
 
             // Finalizing the service: keep FINISHED when a review already exists,
@@ -101,7 +142,7 @@ export class SchedulingService {
         }
 
         agenda.status = newStatus
-        console.log("Trying to update the Schedule")
+        this.logger.debug("Trying to update the Schedule")
         const saved = await this.scheduleRepository.save(agenda)
 
         if (newStatus === AgendaStatus.STARTED) {
@@ -134,7 +175,6 @@ export class SchedulingService {
         ids: number[],
         entrepreneurId: number,
         scheduledDate: Date,
-        timeSlot: string,
         description: string,
         address?:
             | {
@@ -151,62 +191,93 @@ export class SchedulingService {
         ])
 
         if (!user || !entrepreneur) {
-            throw new Error("Usuário ou prestador de serviços não encontrado.")
+            throw new HttpException(
+                {
+                    status: HttpStatus.NOT_FOUND,
+                    error: "Usuário ou prestador de serviços não encontrado."
+                },
+                HttpStatus.NOT_FOUND
+            )
         }
 
         if (!modalities || modalities.length === 0) {
-            throw new Error("Modalidades não encontradas.")
+            throw new HttpException(
+                {
+                    status: HttpStatus.NOT_FOUND,
+                    error: "Modalidades não encontradas."
+                },
+                HttpStatus.NOT_FOUND
+            )
         }
 
         const baseDateTime = new Date(scheduledDate)
         if (isNaN(baseDateTime.getTime())) {
-            throw new Error("Data de agendamento inválida.")
+            throw new HttpException(
+                {
+                    status: HttpStatus.BAD_REQUEST,
+                    error: "Data de agendamento inválida."
+                },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const orderedModalities = ids
             .map((id) => modalities.find((modality) => modality.id === id))
             .filter(Boolean)
 
-        let currentDateTime = new Date(baseDateTime)
-        const createdSchedules = []
+        // Transação: ou todos os serviços da reserva são criados, ou nenhum.
+        const createdSchedules = await this.scheduleRepository.manager.transaction(
+            async (manager) => {
+                let currentDateTime = new Date(baseDateTime)
+                const created: Schedule[] = []
 
-        for (const modality of orderedModalities) {
-            const isAvailable = await this.isTimeSlotAvailable(
-                entrepreneurId,
-                currentDateTime
-            )
+                for (const modality of orderedModalities) {
+                    const slotEnd = new Date(
+                        currentDateTime.getTime() + modality.duration * 1000
+                    )
 
-            if (!isAvailable) {
-                if (createdSchedules.length > 0) {
-                    await this.scheduleRepository.remove(createdSchedules)
+                    const conflict = await this.hasTimeConflict(
+                        entrepreneurId,
+                        currentDateTime,
+                        slotEnd
+                    )
+                    if (conflict) {
+                        throw new HttpException(
+                            {
+                                status: HttpStatus.CONFLICT,
+                                error: `Horário ${currentDateTime.toLocaleTimeString(
+                                    "pt-BR",
+                                    {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        timeZone: "America/Sao_Paulo"
+                                    }
+                                )} não está disponível para o serviço "${modality.title}".`
+                            },
+                            HttpStatus.CONFLICT
+                        )
+                    }
+
+                    const schedule = new Schedule()
+                    schedule.user = user
+                    schedule.entrepreneur = entrepreneur
+                    schedule.scheduledDate = new Date(currentDateTime)
+                    schedule.description = description
+                    schedule.modality = modality
+                    schedule.addressNumber = address?.number
+                    schedule.addressZipCode = address?.zipCode
+                    schedule.addressComplement = address?.complement
+
+                    created.push(await manager.save(schedule))
+                    currentDateTime = slotEnd
                 }
-                throw new Error(
-                    `Horário ${currentDateTime.toLocaleTimeString("pt-BR", {
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    })} não está disponível para o serviço "${modality.title}".`
-                )
+
+                return created
             }
+        )
 
-            const schedule = new Schedule()
-            schedule.user = user
-            schedule.entrepreneur = entrepreneur
-            schedule.scheduledDate = new Date(currentDateTime)
-            schedule.description = description
-            schedule.modality = modality
-            schedule.addressNumber = address?.number
-            schedule.addressZipCode = address?.zipCode
-            schedule.addressComplement = address?.complement
-
-            const savedSchedule = await this.scheduleRepository.save(schedule)
-            createdSchedules.push(savedSchedule)
-
-            currentDateTime = new Date(
-                currentDateTime.getTime() + modality.duration * 1000
-            )
-        }
-
-        // Notify the entrepreneur that a client just booked with them.
+        // Notifica o empreendedor (nunca derruba a request — falhas de push são engolidas
+        // dentro de NotificationsService).
         if (createdSchedules.length > 0) {
             const serviceName =
                 orderedModalities.length > 1
@@ -225,12 +296,13 @@ export class SchedulingService {
             message: "Agendamentos criados com sucesso.",
             schedules: createdSchedules.map((schedule) => ({
                 id: schedule.id,
-                modalityName: schedule.modality.name,
+                modalityName: schedule.modality.title,
                 scheduledTime: schedule.scheduledDate.toLocaleTimeString(
                     "pt-BR",
                     {
                         hour: "2-digit",
-                        minute: "2-digit"
+                        minute: "2-digit",
+                        timeZone: "America/Sao_Paulo"
                     }
                 ),
                 duration: schedule.modality.duration
@@ -385,22 +457,6 @@ export class SchedulingService {
         )
     }
 
-    async isTimeAvailable(
-        entrepreneurId: number,
-        scheduledDate: Date
-    ): Promise<boolean> {
-        const scheduledAppointments = await this.findByEntrepreneurId(
-            entrepreneurId
-        )
-
-        const isTimeSlotTaken = scheduledAppointments.some((schedule) => {
-            const existingScheduledDate = new Date(schedule.scheduledDate)
-            return existingScheduledDate.getTime() === scheduledDate.getTime()
-        })
-
-        return !isTimeSlotTaken
-    }
-
     async getAvailableTimes(
         entrepreneurId: number,
         date: string,
@@ -408,7 +464,19 @@ export class SchedulingService {
     ): Promise<string[]> {
         const dateObj = DateTime.fromISO(date, { zone: "America/Sao_Paulo" })
         if (!dateObj.isValid) {
-            throw new Error("Data informada inválida")
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Data informada inválida" },
+                HttpStatus.BAD_REQUEST
+            )
+        }
+
+        // Query params chegam como string.
+        const durationMinutes = Number(duration)
+        if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+            throw new HttpException(
+                { status: HttpStatus.BAD_REQUEST, error: "Duração inválida" },
+                HttpStatus.BAD_REQUEST
+            )
         }
 
         const startOfDay = dateObj.startOf("day").toUTC().toJSDate()
@@ -417,7 +485,8 @@ export class SchedulingService {
         const scheduledAppointments = await this.scheduleRepository.find({
             where: {
                 entrepreneur: { entrepreneurId: entrepreneurId },
-                scheduledDate: Between(startOfDay, endOfDay)
+                scheduledDate: Between(startOfDay, endOfDay),
+                status: Not(AgendaStatus.CANCELED)
             },
             relations: {
                 modality: true
@@ -429,7 +498,10 @@ export class SchedulingService {
         })
 
         if (!entrepreneur) {
-            throw new Error("Entrepreneur not found")
+            throw new HttpException(
+                { status: HttpStatus.NOT_FOUND, error: "Prestador não encontrado" },
+                HttpStatus.NOT_FOUND
+            )
         }
 
         const operationHours = Array.isArray(entrepreneur.operation)
@@ -449,71 +521,58 @@ export class SchedulingService {
             return []
         }
 
-        const workingHours = this.generateWorkingHours(
-            todayOperation.openinHours,
-            todayOperation.closingTime
-        )
-
-        const occupiedTimes = scheduledAppointments.flatMap((schedule) => {
-            const start = DateTime.fromJSDate(schedule.scheduledDate, {
-                zone: "utc"
-            }).setZone("America/Sao_Paulo")
-            const end = start.plus({ seconds: schedule.modality.duration })
-
-            const times = []
-            let current = start
-            while (current < end) {
-                times.push(current.toFormat("HH:mm"))
-                current = current.plus({ minutes: 30 })
-            }
-
-            return times
+        // Intervalos ocupados em ms de epoch: [início, início + duração).
+        const occupiedIntervals = scheduledAppointments.map((schedule) => {
+            const start = new Date(schedule.scheduledDate).getTime()
+            const end = start + (schedule.modality?.duration ?? 0) * 1000
+            return { start, end }
         })
 
-        const blockSize = duration / 30
+        const parseTime = (raw: string) => {
+            const [h, m] = raw.padStart(5, "0").split(":").map(Number)
+            return { hour: h, minute: m }
+        }
+        const opening = parseTime(todayOperation.openinHours)
+        const closing = parseTime(todayOperation.closingTime)
+
+        const closingDateTime = dateObj.set({
+            hour: closing.hour,
+            minute: closing.minute,
+            second: 0,
+            millisecond: 0
+        })
+
+        const now = DateTime.now().setZone("America/Sao_Paulo")
         const availableTimes: string[] = []
 
-        for (let i = 0; i <= workingHours.length - blockSize; i++) {
-            const timeBlock = workingHours.slice(i, i + blockSize)
-            const isBlockFree = timeBlock.every(
-                (time) => !occupiedTimes.includes(time)
-            )
-            if (isBlockFree) {
-                const [hour, minute] = timeBlock[0].split(":").map(Number)
-                const blockStartTime = dateObj.set({ hour, minute })
+        let candidate = dateObj.set({
+            hour: opening.hour,
+            minute: opening.minute,
+            second: 0,
+            millisecond: 0
+        })
 
-                const now = DateTime.now().setZone("America/Sao_Paulo")
-                if (
-                    dateObj.toISODate() !== now.toISODate() ||
-                    blockStartTime > now
-                ) {
-                    availableTimes.push(timeBlock[0])
-                }
+        while (candidate.plus({ minutes: durationMinutes }) <= closingDateTime) {
+            const candidateStart = candidate.toUTC().toMillis()
+            const candidateEnd = candidate
+                .plus({ minutes: durationMinutes })
+                .toUTC()
+                .toMillis()
+
+            const hasConflict = occupiedIntervals.some(
+                (occ) => candidateStart < occ.end && candidateEnd > occ.start
+            )
+
+            const isPast =
+                dateObj.toISODate() === now.toISODate() && candidate <= now
+
+            if (!hasConflict && !isPast) {
+                availableTimes.push(candidate.toFormat("HH:mm"))
             }
+
+            candidate = candidate.plus({ minutes: 30 })
         }
 
         return availableTimes
-    }
-
-    private generateWorkingHours(
-        openingTime: string,
-        closingTime: string
-    ): string[] {
-        const hours: string[] = []
-        let currentTime = DateTime.fromFormat(
-            openingTime.padStart(5, "0"),
-            "HH:mm"
-        )
-        const closingTimeObj = DateTime.fromFormat(
-            closingTime.padStart(5, "0"),
-            "HH:mm"
-        )
-
-        while (currentTime <= closingTimeObj) {
-            hours.push(currentTime.toFormat("HH:mm"))
-            currentTime = currentTime.plus({ minutes: 30 })
-        }
-
-        return hours
     }
 }

@@ -1,5 +1,5 @@
 import { IsString, IsEmail, IsNumber, IsBoolean, IsJSON, IsOptional, MaxLength } from "class-validator"
-import { Image } from "src/controller/uploads/entities/upload.entity"
+import { Image } from "../../uploads/entities/upload.entity"
 import {
     OneToMany,
 } from "typeorm"

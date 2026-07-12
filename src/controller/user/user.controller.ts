@@ -15,13 +15,14 @@ import {
     UnauthorizedException,
     UseInterceptors,
     UploadedFile,
-    Request
+    Request,
+    Query
 } from "@nestjs/common"
 import { UserService } from "./user.service"
 import { CreateUserDto } from "./dto/create-user.dto"
-import { ResultDto } from "src/dto/result.dto"
-import { AuthService } from "src/auth/auth.service"
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
+import { ResultDto } from "../../dto/result.dto"
+import { AuthService } from "../../auth/auth.service"
+import { JwtAuthGuard } from "../../auth/jwt-auth.guard"
 import { ReturnUserDto } from "./dto/return-user.dto"
 import { ValidateDoc } from "../helpers/validate.cpf"
 import { ValidatePhone } from "../helpers/validate.phone"
@@ -59,6 +60,24 @@ export class UserController {
         } catch (e) {
             console.log(e)
         }
+    }
+
+    @Get("check-availability")
+    async checkAvailability(
+        @Query("email") email?: string,
+        @Query("doc") doc?: string
+    ): Promise<{ status: boolean; emailInUse?: boolean; docInUse?: boolean }> {
+        const result: { emailInUse?: boolean; docInUse?: boolean } = {}
+        if (email) {
+            const existing = await this.userService.findOneByEmail(email.trim())
+            result.emailInUse = !!existing
+        }
+        if (doc) {
+            const digits = doc.replace(/\D/g, "")
+            const existing = await this.userService.findOneByCpf(digits)
+            result.docInUse = !!existing
+        }
+        return { status: true, ...result }
     }
 
     @UsePipes(ValidationPipe)
@@ -118,7 +137,7 @@ export class UserController {
 
         const { name, userId } = user
 
-        return this.authService.login(userId, name)
+        return this.authService.login(userId, name, "user")
     }
 
     @Put(":id")
@@ -251,7 +270,8 @@ export class UserController {
         @Param("id") id: string
     ) {
         const result = await this.imageService.storeImage(image)
-        await this.userService.updateImage(Number(id), result.name)
+        // Persiste o base64 no banco (antes salvava só o nome do arquivo em disco)
+        await this.userService.updateImage(Number(id), result.bytes)
 
         return { status: true, message: "Imagem atualizada com sucesso." }
     }

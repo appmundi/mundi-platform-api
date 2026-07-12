@@ -1,4 +1,4 @@
-import { ValidationPipe } from "@nestjs/common"
+import { ValidationPipe, Logger } from "@nestjs/common"
 import { NestFactory } from "@nestjs/core"
 import { AppModule } from "./app.module"
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger"
@@ -9,18 +9,20 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 
 declare const module: any
 
+const logger = new Logger('Bootstrap')
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+    app.enableCors({ origin: '*' });
+
     // Configurar arquivos estáticos
     const uploadsPath = join(__dirname, '..', 'uploads');
-    console.log('Servindo arquivos estáticos de:', uploadsPath);
+    logger.log(`Servindo arquivos estáticos de: ${uploadsPath}`);
 
     app.useStaticAssets(join(__dirname, '..', 'uploads'), {
         prefix: '/uploads/',
     });
-    
 
     // Configurar validação global
     app.useGlobalPipes(new ValidationPipe());
@@ -43,7 +45,7 @@ async function bootstrap() {
 
     await app.listen(3000);
 
-    console.log("Rodando já em localhost amigão > http://localhost:3000");
+    logger.log('API rodando em http://localhost:3000');
 
     if (module.hot) {
         module.hot.accept();

@@ -7,7 +7,7 @@ import {
     NotFoundException
 } from "@nestjs/common"
 import { AvaliationService } from "./avaliation.service"
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
+import { JwtAuthGuard } from "../../auth/jwt-auth.guard"
 import { AgendaStatus } from "../scheduling/entities/scheduling.entity"
 import { SchedulingService } from "../scheduling/scheduling.service"
 
@@ -39,11 +39,13 @@ export class AvaliationController {
                 evaluationData.comment,
                 evaluationData.name,
                 evaluationData.scheduleId,
-                evaluationData.newStatus,
                 evaluationData.userId
             )
 
-            await this.scheduleService.updateStatus(evaluationData.scheduleId, AgendaStatus.FINISHED);
+            await this.scheduleService.updateStatus(
+                evaluationData.scheduleId,
+                AgendaStatus.FINISHED
+            );
 
             return { message: "Avaliação enviada com sucesso", avaliation }
         } catch (error) {

@@ -14,11 +14,14 @@ import { ModalityModule } from "./controller/modality/modality.module"
 import { CategoryModule } from "./controller/category/category.module"
 import { registerClientModule } from "./controller/registerClient/client.module"
 import { NotificationsModule } from "./controller/notifications/notifications.module"
+import { loadEnvironmentVariables } from "./config/environment"
+import { DatabaseModule } from "./database/database.module"
 
-require("dotenv").config()
+loadEnvironmentVariables()
 
 @Module({
     imports: [
+        DatabaseModule,
         ScheduleModule.forRoot(),
         AuthModule,
         UserModule,

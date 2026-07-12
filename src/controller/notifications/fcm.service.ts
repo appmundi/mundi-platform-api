@@ -60,34 +60,38 @@ export class FcmService implements OnModuleInit {
     ): Promise<void> {
         if (!tokens.length) return
 
-        const response = await admin
-            .messaging(this.app)
-            .sendEachForMulticast({
-                tokens,
-                data,
-                android: { priority: "high" },
-                apns: this.apnsConfig()
-            })
+        try {
+            const response = await admin
+                .messaging(this.app)
+                .sendEachForMulticast({
+                    tokens,
+                    data,
+                    android: { priority: "high" },
+                    apns: this.apnsConfig()
+                })
 
-        const staleCleanup: Promise<void>[] = []
-        response.responses.forEach((r, i) => {
-            if (!r.success) {
-                const code = r.error?.code ?? ""
-                if (
-                    code === "messaging/registration-token-not-registered" ||
-                    code === "messaging/invalid-argument"
-                ) {
-                    staleCleanup.push(
-                        this.deviceTokenService.removeByToken(tokens[i])
-                    )
-                } else {
-                    this.logger.error(
-                        `FCM multicast error for token[${i}]: ${code}`
-                    )
+            const staleCleanup: Promise<void>[] = []
+            response.responses.forEach((r, i) => {
+                if (!r.success) {
+                    const code = r.error?.code ?? ""
+                    if (
+                        code === "messaging/registration-token-not-registered" ||
+                        code === "messaging/invalid-argument"
+                    ) {
+                        staleCleanup.push(
+                            this.deviceTokenService.removeByToken(tokens[i])
+                        )
+                    } else {
+                        this.logger.error(
+                            `FCM multicast error for token[${i}]: ${code}`
+                        )
+                    }
                 }
-            }
-        })
-        await Promise.all(staleCleanup)
+            })
+            await Promise.all(staleCleanup)
+        } catch (e) {
+            this.logger.error(`FCM multicast send error: ${e?.message ?? e}`)
+        }
     }
 
     private apnsConfig(): admin.messaging.ApnsConfig {

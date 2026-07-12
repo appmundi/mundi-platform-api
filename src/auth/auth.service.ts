@@ -1,13 +1,15 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common"
+import { Injectable, UnauthorizedException, Logger } from "@nestjs/common"
 import { UserService } from "../controller/user/user.service"
-import { EntrepreneurService } from "src/controller/entrepreneur/entrepreneur.service"
+import { EntrepreneurService } from "../controller/entrepreneur/entrepreneur.service"
 import * as bcrypt from "bcrypt"
 import { JwtService } from "@nestjs/jwt"
-import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
-import { User } from "src/controller/user/entities/user.entity"
+import { Entrepreneur } from "../controller/entrepreneur/entities/entrepreneur.entity"
+import { User } from "../controller/user/entities/user.entity"
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name)
+
     constructor(
         private userService: UserService,
         private entrepreneurService: EntrepreneurService,
@@ -60,9 +62,13 @@ export class AuthService {
         )
     }
 
-    async login(userId: string, username: string) {
-        const payload = { sub: userId, id: userId, username: username }
-        console.log("Payload", payload)
+    async login(
+        userId: string,
+        username: string,
+        role: "user" | "entrepreneur" = "user"
+    ) {
+        const payload = { sub: userId, id: userId, username: username, role }
+        this.logger.debug(`login userId=${userId} role=${role}`)
         return {
             status: true,
             message: "Login efetuado com sucesso",

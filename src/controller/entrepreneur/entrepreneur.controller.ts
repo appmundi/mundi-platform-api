@@ -9,6 +9,7 @@ import {
     HttpException,
     HttpStatus,
     Put,
+    Patch,
     Delete,
     Param,
     Request,
@@ -16,27 +17,31 @@ import {
     Inject,
     UseInterceptors,
     UploadedFile,
-    Query
+    Query,
+    Logger
 } from "@nestjs/common"
 import { EntrepreneurService } from "./entrepreneur.service"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
+import { UpdateOperationsDto } from "./dto/update-operations.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
-import { ResultDto } from "src/dto/result.dto"
+import { ResultDto } from "../../dto/result.dto"
 import { ValidateDoc } from "../helpers/validate.cpf"
 import { ValidatePhone } from "../helpers/validate.phone"
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard"
+import { JwtAuthGuard } from "../../auth/jwt-auth.guard"
 import { AuthGuard } from "@nestjs/passport"
-import { AuthService } from "src/auth/auth.service"
+import { AuthService } from "../../auth/auth.service"
 import { Schedule } from "../scheduling/entities/scheduling.entity"
 import { Work } from "../work/entities/work.entity"
 import { Category } from "../category/entities/category.entity"
-import { MailService } from "src/mail/mail.service"
+import { MailService } from "../../mail/mail.service"
 import { Repository } from "typeorm"
 import * as bcrypt from "bcrypt"
 import { FileInterceptor } from "@nestjs/platform-express"
 
 @Controller("entrepreneur")
 export class EntrepreneurController {
+    private readonly logger = new Logger(EntrepreneurController.name)
+
     constructor(
         private readonly entrepreneurService: EntrepreneurService,
         private authService: AuthService,
@@ -70,15 +75,38 @@ export class EntrepreneurController {
     }
 
     @Get("searchAll")
-    async findAll(@Query("query") query?: string | undefined): Promise<Entrepreneur[]> {
-        return this.entrepreneurService.findAll(query)
+    async findAll(
+        @Query("query") query?: string,
+        @Query("section") section?: string,
+    ): Promise<Entrepreneur[]> {
+        return this.entrepreneurService.findAll(query, section)
+    }
+
+    @Get("check-availability")
+    async checkAvailability(
+        @Query("email") email?: string,
+        @Query("doc") doc?: string
+    ): Promise<{ status: boolean; emailInUse?: boolean; docInUse?: boolean }> {
+        const result: { emailInUse?: boolean; docInUse?: boolean } = {}
+        if (email) {
+            const existing = await this.entrepreneurService.findOneByEmail(
+                email.trim()
+            )
+            result.emailInUse = !!existing
+        }
+        if (doc) {
+            const digits = doc.replace(/\D/g, "")
+            const existing = await this.entrepreneurService.findOneByCpf(digits)
+            result.docInUse = !!existing
+        }
+        return { status: true, ...result }
     }
 
     @Get("search/:id")
     async findOneEntrepreneur(
         @Param("id") entrepreneurId: number
     ): Promise<Entrepreneur> {
-        console.log("trying to retrive Entrepreneur", entrepreneurId)
+        this.logger.debug(`findOneEntrepreneur id=${entrepreneurId}`)
         return this.entrepreneurService.findOneById(entrepreneurId)
     }
 
@@ -94,14 +122,8 @@ export class EntrepreneurController {
     @UseGuards(JwtAuthGuard)
     @Delete(":id")
     async deleteUser(@Param("id") id: number): Promise<void> {
-        console.log('[API] DELETE entrepreneur/:id - recebido id=', id)
-        try {
-            await this.entrepreneurService.deleteUser(id)
-            console.log('[API] DELETE entrepreneur/:id - sucesso')
-        } catch (e) {
-            console.error('[API] DELETE entrepreneur/:id - erro:', e)
-            throw e
-        }
+        this.logger.debug(`deleteUser id=${id}`)
+        await this.entrepreneurService.deleteUser(id)
     }
     @Post("login")
     async login(
@@ -113,7 +135,6 @@ export class EntrepreneurController {
         }
     ) {
         try {
-            console.log(`Trying to validate user: ${req.email}`)
             if (
                 !req ||
                 !req.email ||
@@ -125,7 +146,7 @@ export class EntrepreneurController {
                 )
             }
 
-            console.log(`Trying to validate user: ${req.email}`)
+            this.logger.debug(`login attempt: ${req.email}`)
 
             const { email, name, entrepreneurId, password } =
                 await this.authService.validateUser(
@@ -142,11 +163,21 @@ export class EntrepreneurController {
                 throw new UnauthorizedException("Senha incorreta.")
             }
 
-            return await this.authService.login(entrepreneurId, name)
+            return await this.authService.login(entrepreneurId, name, "entrepreneur")
         } catch (e) {
-            console.log(e)
+            this.logger.warn(`login failed: ${e.message}`)
             throw new UnauthorizedException("Erro de autenticação.")
         }
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch(":id/operations")
+    @UsePipes(new ValidationPipe({ whitelist: true }))
+    async updateOperations(
+        @Param("id") id: number,
+        @Body() dto: UpdateOperationsDto,
+    ): Promise<void> {
+        await this.entrepreneurService.updateOperations(id, dto.operations)
     }
 
     @UseGuards(JwtAuthGuard)

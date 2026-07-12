@@ -3,9 +3,10 @@ import {
     Inject,
     HttpStatus,
     HttpException,
-    NotFoundException
+    NotFoundException,
+    Logger
 } from "@nestjs/common"
-import { ResultDto } from "src/dto/result.dto"
+import { ResultDto } from "../../dto/result.dto"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
 import { In, Repository } from "typeorm"
@@ -20,6 +21,8 @@ import { Category } from "../category/entities/category.entity"
 
 @Injectable()
 export class EntrepreneurService {
+    private readonly logger = new Logger(EntrepreneurService.name)
+
     constructor(
         @Inject("CATEGORY_REPOSITORY")
         private categoryRepository: Repository<Category>,
@@ -27,11 +30,11 @@ export class EntrepreneurService {
         private entrepreneurRepository: Repository<Entrepreneur>,
     ) {}
 
-    async findAll(query?: string): Promise<Entrepreneur[]> {
+    async findAll(query?: string, section?: string): Promise<Entrepreneur[]> {
         const idQueryBuilder = this.entrepreneurRepository
         .createQueryBuilder("entrepreneur")
         .leftJoinAndSelect("entrepreneur.work", "work", "work.active = :active", { active: true })
-        .leftJoinAndSelect("work.modalities", "modality") 
+        .leftJoinAndSelect("work.modalities", "modality")
         if (query && query.trim() !== "") {
             idQueryBuilder.where(
                 "LOWER(entrepreneur.name) LIKE :query OR " +
@@ -51,13 +54,56 @@ export class EntrepreneurService {
 
         if (ids.length === 0) return []
 
-        return this.entrepreneurRepository.find({
+        const entrepreneurs = await this.entrepreneurRepository.find({
             where: { entrepreneurId: In(ids) },
             relations: ["category", "avaliation", "work", "schedulling"],
             loadRelationIds: {
                 relations: ["images"]
             }
         })
+
+        if (!section) return entrepreneurs
+
+        const avgRating = (e: Entrepreneur): number =>
+            e.avaliation?.length
+                ? e.avaliation.reduce((sum, av) => sum + av.rating, 0) / e.avaliation.length
+                : 0
+
+        if (section === 'recommended') {
+            return [...entrepreneurs].sort((a, b) => {
+                const diff = avgRating(b) - avgRating(a)
+                if (diff !== 0) return diff
+                return (b.avaliation?.length ?? 0) - (a.avaliation?.length ?? 0)
+            })
+        }
+
+        if (section === 'availableToday') {
+            const weekdays = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
+            const todayName = weekdays[new Date().getDay()]
+            const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes()
+
+            return entrepreneurs.filter(e => {
+                try {
+                    const ops: any[] = Array.isArray(e.operation)
+                        ? e.operation as any[]
+                        : JSON.parse(e.operation as unknown as string)
+                    return ops.some(op => {
+                        if (op.day?.trim().toLowerCase() !== todayName || !op.isActive) return false
+                        const [closingH, closingM] = (op.closingTime as string).split(':').map(Number)
+                        return closingH * 60 + closingM > nowMinutes + 60
+                    })
+                } catch {
+                    return false
+                }
+            })
+        }
+
+        if (section === 'offers') {
+            // Top-10 by rating as featured/promoted picks
+            return [...entrepreneurs].sort((a, b) => avgRating(b) - avgRating(a)).slice(0, 10)
+        }
+
+        return entrepreneurs
     }
 
     async register(data: CreateEntrepreneurDto): Promise<ResultDto> {
@@ -413,6 +459,16 @@ export class EntrepreneurService {
         })
     }
 
+    async updateOperations(id: number, operations: { day: string; isActive: boolean; openinHours: string; closingTime: string }[]): Promise<void> {
+        const entrepreneur = await this.getUserById(id)
+        if (!entrepreneur) {
+            throw new NotFoundException("Entrepreneur not found")
+        }
+        entrepreneur.operation = operations as unknown as JSON
+        await this.entrepreneurRepository.save(entrepreneur)
+        this.logger.debug(`updateOperations id=${id} days=${operations.length}`)
+    }
+
     async updateWork(id: number, workData: Partial<Work[]>): Promise<void> {
         try {
             const entrepreneur = await this.entrepreneurRepository
@@ -426,13 +482,13 @@ export class EntrepreneurService {
                 throw new NotFoundException("Entrepreneur not found")
             }
 
-            console.log("Work > ", workData)
+            this.logger.debug(`updateWork id=${id}`)
 
             entrepreneur.work = [...workData] // Substitui todos os trabalhos antigos pelos novos
 
             await this.entrepreneurRepository.save(entrepreneur)
         } catch (e) {
-            console.log("Ero update > ", e)
+            this.logger.error(`updateWork id=${id} error: ${e.message}`)
         }
     }
 
@@ -449,11 +505,10 @@ export class EntrepreneurService {
         if (!entrepreneur) {
             throw new NotFoundException("Entrepreneur not found")
         }
-        console.log(categoryData);
         entrepreneur.category = categoryData
 
         const result = await this.entrepreneurRepository.save(entrepreneur)
-        console.log(result.category);
+        this.logger.debug(`updateCategory id=${id} categories=${result.category?.length}`)
     }
 
     async updateSchedule(

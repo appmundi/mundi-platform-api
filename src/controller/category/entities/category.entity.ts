@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from "typeorm"
-import { Entrepreneur } from "src/controller/entrepreneur/entities/entrepreneur.entity"
+import { Entrepreneur } from "../../entrepreneur/entities/entrepreneur.entity"
 
 @Entity()
 export class Category {
