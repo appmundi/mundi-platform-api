@@ -15,7 +15,8 @@ import {
     UnauthorizedException,
     UseInterceptors,
     UploadedFile,
-    Request
+    Request,
+    Query
 } from "@nestjs/common"
 import { UserService } from "./user.service"
 import { CreateUserDto } from "./dto/create-user.dto"
@@ -59,6 +60,24 @@ export class UserController {
         } catch (e) {
             console.log(e)
         }
+    }
+
+    @Get("check-availability")
+    async checkAvailability(
+        @Query("email") email?: string,
+        @Query("doc") doc?: string
+    ): Promise<{ status: boolean; emailInUse?: boolean; docInUse?: boolean }> {
+        const result: { emailInUse?: boolean; docInUse?: boolean } = {}
+        if (email) {
+            const existing = await this.userService.findOneByEmail(email.trim())
+            result.emailInUse = !!existing
+        }
+        if (doc) {
+            const digits = doc.replace(/\D/g, "")
+            const existing = await this.userService.findOneByCpf(digits)
+            result.docInUse = !!existing
+        }
+        return { status: true, ...result }
     }
 
     @UsePipes(ValidationPipe)
@@ -251,7 +270,8 @@ export class UserController {
         @Param("id") id: string
     ) {
         const result = await this.imageService.storeImage(image)
-        await this.userService.updateImage(Number(id), result.name)
+        // Persiste o base64 no banco (antes salvava só o nome do arquivo em disco)
+        await this.userService.updateImage(Number(id), result.bytes)
 
         return { status: true, message: "Imagem atualizada com sucesso." }
     }

@@ -17,20 +17,10 @@ import {
     FileInterceptor
 } from "@nestjs/platform-express"
 import { ImagesService } from "./upload.service"
-import * as path from "path"
 import { Readable } from "typeorm/platform/PlatformTools"
-import * as fs from 'fs';
-import { join } from 'path';
 
 @Controller("images")
 export class ImagesController {
-    private readonly uploadsDir = path.join(
-        process.cwd(),
-        "src",
-        "controller",
-        "uploads",
-        "images"
-    )
     constructor(private readonly imagesService: ImagesService) {}
 
     @Post("upload")
@@ -149,26 +139,17 @@ export class ImagesController {
     ): Promise<StreamableFile | null> {
         try {
             const id = Number.parseInt(userId)
+            const image = await this.imagesService.getUserProfileImage(id)
 
-            const image = await this.imagesService.getUserProfileImage(id);
-
-            const filePath = join(this.uploadsDir, `${image.base64}`)
-            console.log(filePath);
-
-            if (!fs.existsSync(filePath)) {
-                return null // arquivo não existe
+            if (!image) {
+                return null
             }
 
-            const fileBuffer = fs.readFileSync(filePath)
-
-            const readableStream = new Readable()
-            readableStream.push(fileBuffer)
-            readableStream.push(null)
-
-            return new StreamableFile(readableStream, {
-                type: "image/jpeg" // ajuste conforme extensão
-            })
+            return this.createStreamableFile(image.base64, "image/jpeg")
         } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error
+            }
             throw new NotFoundException("Erro ao processar imagem")
         }
     }

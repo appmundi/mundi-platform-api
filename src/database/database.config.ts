@@ -44,6 +44,14 @@ export const getDatabaseType = (): SupportedDatabaseType => {
     return "postgres"
 }
 
+/**
+ * MySQL/TiDB's `text` type caps at ~64KB — too small for a base64-encoded
+ * image. Postgres' `text` is unlimited. Use this for columns that store
+ * base64 image payloads.
+ */
+export const getLargeTextColumnType = (): "longtext" | "text" =>
+    getDatabaseType() === "mysql" ? "longtext" : "text"
+
 const getMysqlSslConfig = () => {
     const useSSL = getOptionalBoolean(process.env.DB_SSL) ?? false
 

@@ -1,5 +1,6 @@
 import { Schedule } from "../../scheduling/entities/scheduling.entity"
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
+import { getLargeTextColumnType } from "../../../database/database.config"
 
 @Entity()
 export class User {
@@ -48,6 +49,6 @@ export class User {
     @OneToMany(() => Schedule, (schedulling) => schedulling.user)
     schedulling: Schedule[]
 
-    @Column({nullable: true, default: null})
+    @Column({ type: getLargeTextColumnType(), nullable: true, default: null })
     imageUrl: string
 }

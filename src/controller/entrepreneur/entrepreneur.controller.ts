@@ -82,6 +82,26 @@ export class EntrepreneurController {
         return this.entrepreneurService.findAll(query, section)
     }
 
+    @Get("check-availability")
+    async checkAvailability(
+        @Query("email") email?: string,
+        @Query("doc") doc?: string
+    ): Promise<{ status: boolean; emailInUse?: boolean; docInUse?: boolean }> {
+        const result: { emailInUse?: boolean; docInUse?: boolean } = {}
+        if (email) {
+            const existing = await this.entrepreneurService.findOneByEmail(
+                email.trim()
+            )
+            result.emailInUse = !!existing
+        }
+        if (doc) {
+            const digits = doc.replace(/\D/g, "")
+            const existing = await this.entrepreneurService.findOneByCpf(digits)
+            result.docInUse = !!existing
+        }
+        return { status: true, ...result }
+    }
+
     @Get("search/:id")
     async findOneEntrepreneur(
         @Param("id") entrepreneurId: number

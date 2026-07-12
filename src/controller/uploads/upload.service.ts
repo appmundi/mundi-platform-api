@@ -1,9 +1,7 @@
 import { Injectable, Inject, NotFoundException } from "@nestjs/common"
-import * as fs from "fs"
 import { Repository } from "typeorm"
 import { Image } from "./entities/upload.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
-import * as path from "path"
 import { ImageDTO } from "../../dto/image.dto"
 import sharp = require("sharp")
 import { User } from "../user/entities/user.entity"
@@ -64,14 +62,6 @@ export class ImagesService {
 
     async storeImage(image: Express.Multer.File): Promise<ImageDTO> {
         const fileName = `${Date.now()}-${image.originalname}`
-        const uploadFolder = path.resolve(
-            __dirname,
-            "../../../src/controller/uploads/images"
-        )
-
-        const filePath = path.join(uploadFolder, fileName)
-
-        fs.mkdirSync(uploadFolder, { recursive: true })
 
         try {
             const compressedBuffer = await sharp(image.buffer)
@@ -80,8 +70,6 @@ export class ImagesService {
                     mozjpeg: true
                 })
                 .toBuffer()
-
-            fs.writeFileSync(filePath, compressedBuffer)
 
             const base64Image = compressedBuffer.toString("base64")
 
