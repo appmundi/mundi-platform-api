@@ -390,7 +390,20 @@ export class EntrepreneurService {
             WHERE e.entrepreneurId = ?`,
             [entrepreneurId]
         )
-        return results[0]?.entrepreneur ?? null
+
+        const raw = results[0]?.entrepreneur
+        if (raw == null) {
+            return null
+        }
+
+        // JSON_OBJECT() do MySQL volta como string. Retornar a string crua faz
+        // o Express responder com Content-Type: text/html, e clientes que
+        // respeitam o header (Dio, no app do cliente) não desserializam o
+        // corpo — o app recebia uma String onde esperava um Map. Convertendo
+        // aqui, o Nest responde application/json e o contrato fica correto
+        // para todos os consumidores. O driver pode já devolver objeto
+        // (dependendo de versão/engine), então o typeof é obrigatório.
+        return typeof raw === "string" ? JSON.parse(raw) : raw
     }
 
     async deleteUser(entrepreneurId: number): Promise<void> {

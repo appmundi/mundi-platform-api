@@ -51,4 +51,10 @@ export class User {
 
     @Column({ type: getLargeTextColumnType(), nullable: true, default: null })
     imageUrl: string
+
+    // Guarda o seed do endereço de cadastro em UserAddress (ver
+    // UserAddressService.findByUserId): evita semear de novo depois que o
+    // usuário apagar o endereço "Casa" gerado automaticamente.
+    @Column({ default: false })
+    addressBookSeeded: boolean
 }

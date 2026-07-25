@@ -61,6 +61,26 @@ export class Schedule {
     addressComplement: string
 
     @Column({
+        nullable: true
+    })
+    addressStreet: string
+
+    @Column({
+        nullable: true
+    })
+    addressNeighborhood: string
+
+    @Column({
+        nullable: true
+    })
+    addressCity: string
+
+    @Column({
+        nullable: true
+    })
+    addressState: string
+
+    @Column({
         type: 'enum',
         enum: AgendaStatus,
         default: AgendaStatus.INIT, 

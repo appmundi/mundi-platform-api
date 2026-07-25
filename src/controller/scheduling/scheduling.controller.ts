@@ -64,6 +64,10 @@ export class SchedulingController {
                 number: string,
                 zipCode: string,
                 complement: string,
+                street?: string,
+                neighborhood?: string,
+                city?: string,
+                state?: string,
             } | undefined,
         },
         @Headers("Authorization") authorizationHeader: string

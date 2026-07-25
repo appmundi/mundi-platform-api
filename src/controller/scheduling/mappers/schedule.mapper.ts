@@ -12,6 +12,10 @@ export interface ScheduleDto {
     addressZipCode?: string
     addressNumber?: string
     addressComplement?: string
+    addressStreet?: string
+    addressNeighborhood?: string
+    addressCity?: string
+    addressState?: string
     user: Partial<User>
     entrepreneur: Partial<Entrepreneur>
     modality: Partial<Modality>
@@ -66,6 +70,10 @@ export class ScheduleMapper {
             addressZipCode: s.addressZipCode,
             addressNumber: s.addressNumber,
             addressComplement: s.addressComplement,
+            addressStreet: s.addressStreet,
+            addressNeighborhood: s.addressNeighborhood,
+            addressCity: s.addressCity,
+            addressState: s.addressState,
             user,
             entrepreneur,
             modality,
