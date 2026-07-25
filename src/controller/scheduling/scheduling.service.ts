@@ -181,6 +181,10 @@ export class SchedulingService {
                   number: string
                   zipCode: string
                   complement: string
+                  street?: string
+                  neighborhood?: string
+                  city?: string
+                  state?: string
               }
             | undefined
     ) {
@@ -267,6 +271,10 @@ export class SchedulingService {
                     schedule.addressNumber = address?.number
                     schedule.addressZipCode = address?.zipCode
                     schedule.addressComplement = address?.complement
+                    schedule.addressStreet = address?.street
+                    schedule.addressNeighborhood = address?.neighborhood
+                    schedule.addressCity = address?.city
+                    schedule.addressState = address?.state
 
                     created.push(await manager.save(schedule))
                     currentDateTime = slotEnd
