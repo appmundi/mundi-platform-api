@@ -56,7 +56,23 @@ export class EntrepreneurService {
 
         const entrepreneurs = await this.entrepreneurRepository.find({
             where: { entrepreneurId: In(ids) },
-            relations: ["category", "avaliation", "work", "schedulling"],
+            select: [
+                "entrepreneurId",
+                "name",
+                "companyName",
+                "address",
+                "addressNumber",
+                "cep",
+                "city",
+                "state",
+                "description",
+                "operation",
+                "latitude",
+                "longitude",
+                "optionwork",
+                "deslocation"
+            ],
+            relations: ["category", "avaliation"],
             loadRelationIds: {
                 relations: ["images"]
             }
