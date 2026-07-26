@@ -3,6 +3,7 @@ import { Repository } from "typeorm"
 import { User } from "./entities/user.entity"
 import { Schedule } from "../scheduling/entities/scheduling.entity"
 import { CreateUserDto } from "./dto/create-user.dto"
+import { ReturnUserDto } from "./dto/return-user.dto"
 import { ResultDto } from "../../dto/result.dto"
 import * as bcrypt from "bcrypt"
 import { randomBytes } from 'crypto';
@@ -14,10 +15,23 @@ export class UserService {
         private userRepository: Repository<User>
     ) {}
 
-    async findAll(): Promise<User[]> {
-        return this.userRepository.find({
-            relations: ["schedulling"]
+    async findAll(): Promise<ReturnUserDto[]> {
+        const users = await this.userRepository.find({
+            select: [
+                "userId",
+                "name",
+                "email",
+                "doc",
+                "phone",
+                "address",
+                "addressNumber",
+                "cep",
+                "city",
+                "state"
+            ]
         })
+
+        return users.map((user) => new ReturnUserDto(user))
     }
 
     async register(data: CreateUserDto): Promise<ResultDto> {
