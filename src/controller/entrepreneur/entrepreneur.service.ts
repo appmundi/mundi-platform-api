@@ -18,6 +18,32 @@ import { Client } from "../registerClient/entities/client.entity"
 import { Modality } from "../modality/entities/modality.entity"
 import * as bcrypt from "bcrypt"
 import { Category } from "../category/entities/category.entity"
+import { User } from "../user/entities/user.entity"
+import { toUf } from "../helpers/uf-normalizer"
+import {
+    DEFAULT_HOME_SERVICE_RADIUS_KM,
+    ESTABLISHMENT_RADIUS_KM,
+    hasUsableCoordinates,
+    haversineKm,
+    parseServiceRadiusKm
+} from "../helpers/geo"
+
+export type AppliedGeoFilter = "distance" | "uf" | "none"
+
+export interface NearbyRequest {
+    query?: string
+    section?: string
+    latitude?: number
+    longitude?: number
+    userId?: number
+    role?: string
+}
+
+export interface NearbyResult {
+    data: (Entrepreneur & { distanceKm: number | null })[]
+    appliedFilter: AppliedGeoFilter
+    clientUf: string | null
+}
 
 @Injectable()
 export class EntrepreneurService {
@@ -29,6 +55,115 @@ export class EntrepreneurService {
         @Inject("ENTREPRENEUR_REPOSITORY")
         private entrepreneurRepository: Repository<Entrepreneur>,
     ) {}
+
+    async findNearby(request: NearbyRequest): Promise<NearbyResult> {
+        const geoEnabled = process.env.GEO_FILTER_ENABLED !== "false"
+        const position =
+            request.latitude !== undefined && request.longitude !== undefined
+                ? { latitude: request.latitude, longitude: request.longitude }
+                : null
+
+        const clientUf = await this.resolveClientUf(request.userId, request.role)
+        const entrepreneurs = await this.findAll(request.query, request.section)
+
+        if (!geoEnabled) {
+            return {
+                data: entrepreneurs.map((e) => this.withDistance(e, null)),
+                appliedFilter: "none",
+                clientUf
+            }
+        }
+
+        const appliedFilter: AppliedGeoFilter = position
+            ? "distance"
+            : clientUf
+              ? "uf"
+              : "none"
+
+        const data = entrepreneurs
+            .filter((e) => this.isVisible(e, clientUf, position))
+            .map((e) => this.withDistance(e, position))
+
+        return { data, appliedFilter, clientUf }
+    }
+
+    private withDistance(
+        entrepreneur: Entrepreneur,
+        position: { latitude: number; longitude: number } | null
+    ): Entrepreneur & { distanceKm: number | null } {
+        const usable = hasUsableCoordinates(
+            entrepreneur.latitude,
+            entrepreneur.longitude
+        )
+
+        const distanceKm =
+            position && usable
+                ? Number(
+                      haversineKm(
+                          position.latitude,
+                          position.longitude,
+                          entrepreneur.latitude,
+                          entrepreneur.longitude
+                      ).toFixed(2)
+                  )
+                : null
+
+        return Object.assign(entrepreneur, { distanceKm })
+    }
+
+    private isVisible(
+        entrepreneur: Entrepreneur,
+        clientUf: string | null,
+        position: { latitude: number; longitude: number } | null
+    ): boolean {
+        const usable = hasUsableCoordinates(
+            entrepreneur.latitude,
+            entrepreneur.longitude
+        )
+
+        if (position && usable) {
+            const distanceKm = haversineKm(
+                position.latitude,
+                position.longitude,
+                entrepreneur.latitude,
+                entrepreneur.longitude
+            )
+            const limit = entrepreneur.optionwork
+                ? (parseServiceRadiusKm(entrepreneur.deslocation) ??
+                  DEFAULT_HOME_SERVICE_RADIUS_KM)
+                : ESTABLISHMENT_RADIUS_KM
+
+            return distanceKm <= limit
+        }
+
+        const entrepreneurUf = toUf(entrepreneur.state)
+        if (!entrepreneurUf) {
+            this.logger.warn(
+                `state não reconhecido no empreendedor ${entrepreneur.entrepreneurId}: "${entrepreneur.state}"`
+            )
+            return true
+        }
+        if (!clientUf) return true
+
+        return entrepreneurUf === clientUf
+    }
+
+    private async resolveClientUf(
+        userId?: number,
+        role?: string
+    ): Promise<string | null> {
+        if (!userId || role !== "user") return null
+
+        try {
+            const user = await this.entrepreneurRepository.manager
+                .getRepository(User)
+                .findOne({ where: { userId }, select: ["userId", "state"] })
+            return toUf(user?.state)
+        } catch (error) {
+            this.logger.warn(`falha ao resolver UF do usuário ${userId}: ${error}`)
+            return null
+        }
+    }
 
     async findAll(query?: string, section?: string): Promise<Entrepreneur[]> {
         const idQueryBuilder = this.entrepreneurRepository

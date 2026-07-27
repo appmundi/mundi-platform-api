@@ -20,7 +20,10 @@ import {
     Query,
     Logger
 } from "@nestjs/common"
-import { EntrepreneurService } from "./entrepreneur.service"
+import { Headers } from "@nestjs/common"
+import * as jwt from "jsonwebtoken"
+import { EntrepreneurService, NearbyResult } from "./entrepreneur.service"
+import { parseCoordinatePair } from "../helpers/geo"
 import { CreateEntrepreneurDto } from "./dto/create-entrepreneur.dto"
 import { UpdateOperationsDto } from "./dto/update-operations.dto"
 import { Entrepreneur } from "./entities/entrepreneur.entity"
@@ -80,6 +83,49 @@ export class EntrepreneurController {
         @Query("section") section?: string,
     ): Promise<Entrepreneur[]> {
         return this.entrepreneurService.findAll(query, section)
+    }
+
+    @Get("nearby")
+    async findNearby(
+        @Query("query") query?: string,
+        @Query("section") section?: string,
+        @Query("lat") lat?: string,
+        @Query("lng") lng?: string,
+        @Headers("authorization") authorizationHeader?: string
+    ): Promise<NearbyResult> {
+        const position = parseCoordinatePair(lat, lng)
+        const caller = this.decodeCallerOrNull(authorizationHeader)
+
+        return this.entrepreneurService.findNearby({
+            query,
+            section,
+            latitude: position?.latitude,
+            longitude: position?.longitude,
+            userId: caller?.id,
+            role: caller?.role
+        })
+    }
+
+    // Este endpoint nunca pode responder 401/400: o app trata 401 como sucesso
+    // (validateStatus) e qualquer outro erro vira tela de erro na home.
+    private decodeCallerOrNull(
+        authorizationHeader?: string
+    ): { id?: number; role?: string } | null {
+        if (!authorizationHeader) return null
+
+        try {
+            const token = authorizationHeader.split(" ")[1]
+            if (!token) return null
+
+            const payload = jwt.verify(
+                token,
+                process.env.ACCESS_TOKEN_SECRET
+            ) as unknown as { sub?: number; id?: number; role?: string }
+
+            return { id: payload.id ?? payload.sub, role: payload.role }
+        } catch {
+            return null
+        }
     }
 
     @Get("check-availability")
