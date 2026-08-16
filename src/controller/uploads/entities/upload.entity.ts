@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { Entrepreneur } from "../../entrepreneur/entities/entrepreneur.entity";
+import { getLargeTextColumnType } from "../../../database/database.config";
 
 @Entity()
 export class Image {
@@ -9,7 +10,7 @@ export class Image {
     @Column()
     filename: string;
 
-    @Column({ type: "text", nullable: true })
+    @Column({ type: getLargeTextColumnType(), nullable: true })
     base64: string;
 
     @ManyToOne(() => Entrepreneur, (entrepreneur) => entrepreneur.images)

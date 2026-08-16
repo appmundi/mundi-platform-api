@@ -12,6 +12,7 @@ import { Image } from "../../uploads/entities/upload.entity"
 import { Schedule } from "../../scheduling/entities/scheduling.entity"
 import { Category } from "../../category/entities/category.entity"
 import { Client } from "../../registerClient/entities/client.entity"
+import { getLargeTextColumnType } from "../../../database/database.config"
 
 @Entity()
 export class Entrepreneur {
@@ -100,6 +101,10 @@ export class Entrepreneur {
     @OneToMany(() => Image, (image) => image.entrepreneur)
     images: Image[]
 
-    @Column({ type: "text", nullable: true, select: false })
+    @Column({
+        type: getLargeTextColumnType(),
+        nullable: true,
+        select: false
+    })
     profileImage: string | null
 }
