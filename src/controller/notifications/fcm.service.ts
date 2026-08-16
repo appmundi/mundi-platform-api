@@ -2,6 +2,12 @@ import { Injectable, OnModuleInit, Logger } from "@nestjs/common"
 import * as admin from "firebase-admin"
 import { DeviceTokenService } from "./device_token.service"
 
+/** Texto exibido no iOS, onde a notificação não é montada pelo app. */
+export interface PushAlert {
+    title: string
+    body: string
+}
+
 @Injectable()
 export class FcmService implements OnModuleInit {
     private readonly logger = new Logger(FcmService.name)
@@ -31,14 +37,15 @@ export class FcmService implements OnModuleInit {
 
     async sendToToken(
         token: string,
-        data: Record<string, string>
+        data: Record<string, string>,
+        alert: PushAlert
     ): Promise<void> {
         try {
             await admin.messaging(this.app).send({
                 token,
                 data,
                 android: { priority: "high", ttl: 300_000 },
-                apns: this.apnsConfig()
+                apns: this.apnsConfig(alert)
             })
         } catch (e: any) {
             const code: string = e?.errorInfo?.code ?? ""
@@ -56,7 +63,8 @@ export class FcmService implements OnModuleInit {
 
     async sendToTokens(
         tokens: string[],
-        data: Record<string, string>
+        data: Record<string, string>,
+        alert: PushAlert
     ): Promise<void> {
         if (!tokens.length) return
 
@@ -67,7 +75,7 @@ export class FcmService implements OnModuleInit {
                     tokens,
                     data,
                     android: { priority: "high" },
-                    apns: this.apnsConfig()
+                    apns: this.apnsConfig(alert)
                 })
 
             const staleCleanup: Promise<void>[] = []
@@ -95,28 +103,30 @@ export class FcmService implements OnModuleInit {
     }
 
     /**
-     * Push silencioso puro — mesmo caminho que o Android já usa.
+     * iOS recebe um alerta pronto; Android ignora este bloco e continua
+     * renderizando pelo `silentDataHandle` a partir do `data`.
      *
-     * O conteúdo da notificação é montado no app, por `silentDataHandle` →
-     * `RenderXxxUseCase`, e não aqui. É o que permite ter no iOS o mesmo
-     * resultado do Android: layout ProgressBar no fluxo do agendamento, card
-     * travado enquanto o serviço corre, e cada etapa substituindo a anterior
-     * pelo `id` da notificação — algo impossível por push de alerta, já que o
-     * iOS não aceita identificadores em notificações remotas.
+     * O tratamento precisa ser diferente por plataforma porque o layout
+     * ProgressBar do fluxo de agendamento é exclusivo do Android
+     * (awesome_notifications, README "ProgressBar and Inbox layouts are only
+     * available for Android devices"), e push silencioso no iOS não é entregue
+     * de forma confiável. O texto enviado aqui espelha o que o Android monta,
+     * para o usuário ler a mesma coisa nas duas plataformas.
      *
-     * Não incluir `alert` nem `mutable-content`: qualquer um dos dois faz o iOS
-     * tratar como alerta, exibir o texto cru e nunca chamar o handler silencioso.
-     * A Apple exige `apns-push-type: background` com prioridade 5.
+     * Sem `mutable-content`: o `data` não está no formato do awesome, então a
+     * Notification Service Extension marcaria como INVALID e exibiria o texto
+     * cru mesmo assim. Sem ela, o alerta chega exatamente como enviado.
      */
-    private apnsConfig(): admin.messaging.ApnsConfig {
+    private apnsConfig(alert: PushAlert): admin.messaging.ApnsConfig {
         return {
             headers: {
-                "apns-push-type": "background",
-                "apns-priority": "5"
+                "apns-push-type": "alert",
+                "apns-priority": "10"
             },
             payload: {
                 aps: {
-                    contentAvailable: true
+                    alert: { title: alert.title, body: alert.body },
+                    sound: "default"
                 }
             }
         }
