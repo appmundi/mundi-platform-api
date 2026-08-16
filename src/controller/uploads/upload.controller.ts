@@ -30,9 +30,16 @@ export class ImagesController {
         @Body() body: { entrepreneurId: number }
     ) {
         const entrepreneurId = body.entrepreneurId
+        const incoming: Express.Multer.File[] = files?.images ?? []
+
+        await this.imagesService.assertPortfolioCapacity(
+            entrepreneurId,
+            incoming.length
+        )
+
         const imagePaths = []
 
-        for (const file of files.images) {
+        for (const file of incoming) {
             const imagePath = await this.imagesService.uploadImage(
                 file,
                 entrepreneurId
