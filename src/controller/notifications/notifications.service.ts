@@ -33,6 +33,30 @@ export interface NewBookingPayload {
     appointmentDatetime: Date
 }
 
+/**
+ * Espelha os textos que os apps montam em `RenderXxxUseCase`, para o iOS —
+ * que recebe o alerta pronto — exibir o mesmo que o Android.
+ */
+const SERVICE_STEP_COPY: Record<ServiceStep, { title: string; body: string }> = {
+    en_route: {
+        title: "Profissional a caminho",
+        body: "Seu profissional está indo até você"
+    },
+    started: { title: "Serviço iniciado", body: "Seu serviço foi iniciado" },
+    finished: {
+        title: "Serviço finalizado",
+        body: "Seu serviço foi concluído com sucesso"
+    }
+}
+
+function formatAppointmentDate(date: Date): string {
+    const d = String(date.getDate()).padStart(2, "0")
+    const m = String(date.getMonth() + 1).padStart(2, "0")
+    const h = String(date.getHours()).padStart(2, "0")
+    const min = String(date.getMinutes()).padStart(2, "0")
+    return `${d}/${m} às ${h}h${min}`
+}
+
 @Injectable()
 export class NotificationsService {
     private readonly logger = new Logger(NotificationsService.name)
@@ -64,9 +88,16 @@ export class NotificationsService {
                 provider_avatar_url: ""
             }
 
+            const copy = SERVICE_STEP_COPY[step]
+            const etaSuffix = payload.eta ? ` — ETA: ${payload.eta}` : ""
+
             await this.fcmService.sendToTokens(
                 tokens.map((t) => t.token),
-                data
+                data,
+                {
+                    title: `${copy.title} • ${payload.modalityTitle}`,
+                    body: `${copy.body}${etaSuffix}\n${payload.providerName}`
+                }
             )
             this.logger.log(
                 `service_step(${step}) sent to user ${clientUserId} — ${tokens.length} token(s)`
@@ -97,9 +128,19 @@ export class NotificationsService {
                 appointment_datetime: payload.appointmentDatetime.toISOString()
             }
 
+            const roleLabel =
+                payload.cancellerRole === "user" ? "cliente" : "profissional"
+            const dateLabel = ` de ${formatAppointmentDate(
+                payload.appointmentDatetime
+            )}`
+
             await this.fcmService.sendToTokens(
                 tokens.map((t) => t.token),
-                data
+                data,
+                {
+                    title: "Agendamento cancelado",
+                    body: `${payload.cancellerName} (${roleLabel}) cancelou "${payload.serviceName}"${dateLabel}.`
+                }
             )
             this.logger.log(
                 `cancellation sent to ${otherPartyOwnerType} ${otherPartyId} — ${tokens.length} token(s)`
@@ -131,7 +172,11 @@ export class NotificationsService {
 
             await this.fcmService.sendToTokens(
                 tokens.map((t) => t.token),
-                data
+                data,
+                {
+                    title: "Você tem um agendamento hoje",
+                    body: `${payload.serviceName} com ${payload.providerName} às ${formatAppointmentDate(payload.appointmentDatetime).split(" às ")[1]}`
+                }
             )
         } catch (e) {
             this.logger.error(`notifyDailyAgendaClient failed: ${e?.message ?? e}`)
@@ -160,7 +205,11 @@ export class NotificationsService {
 
             await this.fcmService.sendToTokens(
                 tokens.map((t) => t.token),
-                data
+                data,
+                {
+                    title: "Novo agendamento",
+                    body: `${payload.clientName} agendou "${payload.serviceName}" para ${formatAppointmentDate(payload.appointmentDatetime)}`
+                }
             )
             this.logger.log(
                 `new_booking sent to entrepreneur ${entrepreneurId} — ${tokens.length} token(s)`
@@ -192,7 +241,14 @@ export class NotificationsService {
 
             await this.fcmService.sendToTokens(
                 tokens.map((t) => t.token),
-                data
+                data,
+                {
+                    title: "Sua agenda de hoje",
+                    body:
+                        count === 1
+                            ? "Você tem 1 agendamento hoje"
+                            : `Você tem ${count} agendamentos hoje`
+                }
             )
         } catch (e) {
             this.logger.error(`notifyDailyAgendaEntrepreneur failed: ${e?.message ?? e}`)
