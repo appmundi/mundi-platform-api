@@ -115,17 +115,27 @@ export class SchedulingService {
         }
 
         if (newStatus == AgendaStatus.FEEDBACK) {
-            const avaliation = await this.avaliationRepository.find({
-                where: { scheduleId: agenda.id }
+            // O cliente avalia um estabelecimento uma única vez: se já existe
+            // avaliação dele para este empreendedor (deste ou de qualquer
+            // agendamento anterior), o serviço vai direto para FINISHED e o app
+            // nunca chega a abrir o modal.
+            const alreadyRated = await this.avaliationRepository.count({
+                where: [
+                    { scheduleId: agenda.id },
+                    {
+                        userId: agenda.user.userId,
+                        entrepreneur: {
+                            entrepreneurId: agenda.entrepreneur.entrepreneurId
+                        }
+                    }
+                ]
             })
 
-            // Finalizing the service: keep FINISHED when a review already exists,
-            // otherwise move to FEEDBACK so the client can still rate. Either way
-            // the service is over for the client, so always send the "finished"
-            // step — this replaces the ongoing "started" notification on their
-            // device (which is locked and can't be dismissed otherwise).
+            // Either way the service is over for the client, so always send the
+            // "finished" step — this replaces the ongoing "started" notification
+            // on their device (which is locked and can't be dismissed otherwise).
             agenda.status =
-                avaliation.length > 0
+                alreadyRated > 0
                     ? AgendaStatus.FINISHED
                     : AgendaStatus.FEEDBACK
             const saved = await this.scheduleRepository.save(agenda)

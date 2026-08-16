@@ -29,14 +29,17 @@ export class AvaliationService {
             )
         }
 
-        if (scheduleId) {
-            const exists = await this.avaliationRepository.findOne({
-                where: { scheduleId }
-            })
-            if (exists) {
-                // Este agendamento já foi avaliado.
-                return exists
-            }
+        // Uma avaliação por cliente/estabelecimento: devolve a existente em vez
+        // de criar duplicata, seja o mesmo agendamento ou qualquer outro do
+        // mesmo empreendedor. O chamador segue finalizando o agendamento.
+        const existing = await this.avaliationRepository.findOne({
+            where: [
+                ...(scheduleId ? [{ scheduleId }] : []),
+                { userId, entrepreneur: { entrepreneurId } }
+            ]
+        })
+        if (existing) {
+            return existing
         }
 
         const avaliation = new Avaliation()
