@@ -94,17 +94,29 @@ export class FcmService implements OnModuleInit {
         }
     }
 
+    /**
+     * Push silencioso puro — mesmo caminho que o Android já usa.
+     *
+     * O conteúdo da notificação é montado no app, por `silentDataHandle` →
+     * `RenderXxxUseCase`, e não aqui. É o que permite ter no iOS o mesmo
+     * resultado do Android: layout ProgressBar no fluxo do agendamento, card
+     * travado enquanto o serviço corre, e cada etapa substituindo a anterior
+     * pelo `id` da notificação — algo impossível por push de alerta, já que o
+     * iOS não aceita identificadores em notificações remotas.
+     *
+     * Não incluir `alert` nem `mutable-content`: qualquer um dos dois faz o iOS
+     * tratar como alerta, exibir o texto cru e nunca chamar o handler silencioso.
+     * A Apple exige `apns-push-type: background` com prioridade 5.
+     */
     private apnsConfig(): admin.messaging.ApnsConfig {
         return {
             headers: {
-                "apns-priority": "10",
-                "apns-push-type": "alert"
+                "apns-push-type": "background",
+                "apns-priority": "5"
             },
             payload: {
                 aps: {
-                    "content-available": 1,
-                    "mutable-content": 1,
-                    alert: { title: "Mundi", body: "Toque para ver" }
+                    contentAvailable: true
                 }
             }
         }
