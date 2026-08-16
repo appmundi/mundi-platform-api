@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException } from "@nestjs/common"
+import {
+    Injectable,
+    Inject,
+    NotFoundException,
+    ConflictException
+} from "@nestjs/common"
 import { Repository } from "typeorm"
 import { Image } from "./entities/upload.entity"
 import { Entrepreneur } from "../entrepreneur/entities/entrepreneur.entity"
@@ -10,6 +15,9 @@ import { InjectRepository } from "@nestjs/typeorm"
 /** Largura máxima das imagens salvas. Fotos menores não são ampliadas. */
 const MAX_IMAGE_WIDTH = 1080
 
+/** Teto de imagens no portfólio de um empreendedor. */
+export const MAX_PORTFOLIO_IMAGES = 5
+
 @Injectable()
 export class ImagesService {
     constructor(
@@ -20,6 +28,35 @@ export class ImagesService {
         @Inject("USER_REPOSITORY")
         private userRepository: Repository<User>
     ) {}
+
+    /**
+     * Valida o lote inteiro antes de gravar qualquer arquivo, para não deixar
+     * um upload parcial (parte das fotos salva e parte recusada) quando o
+     * envio ultrapassa o teto do portfólio.
+     */
+    async assertPortfolioCapacity(
+        entrepreneurId: number,
+        incomingCount: number
+    ): Promise<void> {
+        const current = await this.imageRepository.count({
+            where: { entrepreneur: { entrepreneurId } }
+        })
+
+        if (current + incomingCount > MAX_PORTFOLIO_IMAGES) {
+            const remaining = Math.max(MAX_PORTFOLIO_IMAGES - current, 0)
+
+            throw new ConflictException({
+                error: "PORTFOLIO_LIMIT_REACHED",
+                message:
+                    remaining === 0
+                        ? `Você atingiu o limite de ${MAX_PORTFOLIO_IMAGES} imagens no portfólio. Remova uma para adicionar outra.`
+                        : `Seu portfólio comporta até ${MAX_PORTFOLIO_IMAGES} imagens. Você ainda pode adicionar ${remaining}.`,
+                limit: MAX_PORTFOLIO_IMAGES,
+                current,
+                remaining
+            })
+        }
+    }
 
     async uploadImage(
         image: Express.Multer.File,
