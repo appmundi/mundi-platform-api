@@ -225,13 +225,17 @@ export class UserService {
     }
 
     async updateImage(id: number, imagePath: string): Promise<void> {
-        const user = await this.userRepository.findOne({where: {userId: id}});
-        if(!user) {
+        // UPDATE direto em vez de findOne + save: `imageUrl` agora é
+        // `select: false`, e assim a escrita não depende do save() inferir a
+        // mudança de uma coluna que nem foi carregada.
+        const exists = await this.userRepository.countBy({ userId: id });
+        if (!exists) {
             throw new NotFoundException();
         }
 
-        user.imageUrl = imagePath;
-
-        await this.userRepository.save(user);
+        await this.userRepository.update(
+            { userId: id },
+            { imageUrl: imagePath }
+        );
     }
 }

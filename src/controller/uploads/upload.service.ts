@@ -7,6 +7,9 @@ import sharp = require("sharp")
 import { User } from "../user/entities/user.entity"
 import { InjectRepository } from "@nestjs/typeorm"
 
+/** Largura máxima das imagens salvas. Fotos menores não são ampliadas. */
+const MAX_IMAGE_WIDTH = 1080
+
 @Injectable()
 export class ImagesService {
     constructor(
@@ -65,6 +68,16 @@ export class ImagesService {
 
         try {
             const compressedBuffer = await sharp(image.buffer)
+                // `rotate()` sem argumento aplica a orientação do EXIF nos
+                // pixels. Precisa vir antes do resize, senão a largura seria
+                // aplicada no eixo errado em foto tirada na vertical — e o
+                // sharp descarta o EXIF na saída, então sem isso a imagem
+                // ficaria deitada.
+                .rotate()
+                .resize({
+                    width: MAX_IMAGE_WIDTH,
+                    withoutEnlargement: true
+                })
                 .jpeg({
                     quality: 80,
                     mozjpeg: true
@@ -123,39 +136,29 @@ export class ImagesService {
     }
 
     async deleteProfileImage(entrepreneurId: number): Promise<void> {
-        await this.entrepreneurRepository.query(
-            `UPDATE entrepreneur SET profileImage = NULL WHERE entrepreneurId = ?`,
-            [entrepreneurId]
-        )
-
-        const entrepreneur = await this.entrepreneurRepository.findOneBy({
+        // Checagem de existência separada do UPDATE: no MySQL o `affected` conta
+        // linhas alteradas, então apagar uma imagem já ausente devolveria 0 e
+        // viraria um 404 indevido.
+        const exists = await this.entrepreneurRepository.countBy({
             entrepreneurId
         })
-        if (!entrepreneur) {
+        if (exists === 0) {
             throw new NotFoundException("Empreendedor não encontrado")
         }
-        const updated = entrepreneur.profileImage == null
-        if (!updated) {
-            throw new Error("Erro ao atualizar imagem")
-        }
+
+        await this.entrepreneurRepository.update(
+            { entrepreneurId },
+            { profileImage: null }
+        )
     }
 
     async deleteUserProfileImage(userId: number): Promise<void> {
-        await this.entrepreneurRepository.query(
-            `UPDATE user SET imageUrl = NULL WHERE userId = ?`,
-            [userId]
-        )
+        const exists = await this.userRepository.countBy({ userId })
+        if (exists === 0) {
+            throw new NotFoundException("Usuário não encontrado")
+        }
 
-        const user = await this.userRepository.findOneBy({
-            userId
-        })
-        if (!user) {
-            throw new NotFoundException("Empreendedor não encontrado")
-        }
-        const updated = user.imageUrl == null
-        if (!updated) {
-            throw new Error("Erro ao atualizar imagem")
-        }
+        await this.userRepository.update({ userId }, { imageUrl: null })
     }
 
     async getEntrepreneurProfileImage(

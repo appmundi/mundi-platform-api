@@ -49,8 +49,15 @@ export class User {
     @OneToMany(() => Schedule, (schedulling) => schedulling.user)
     schedulling: Schedule[]
 
-    @Column({ type: getLargeTextColumnType(), nullable: true, default: null })
-    imageUrl: string
+    // `select: false` para o base64 não vir em toda consulta de usuário. Quem
+    // precisa dele pede explicitamente (ver ImagesService.getUserProfileImage).
+    @Column({
+        type: getLargeTextColumnType(),
+        nullable: true,
+        default: null,
+        select: false
+    })
+    imageUrl: string | null
 
     // Guarda o seed do endereço de cadastro em UserAddress (ver
     // UserAddressService.findByUserId): evita semear de novo depois que o
